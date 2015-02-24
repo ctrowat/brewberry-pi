@@ -2,5 +2,7 @@
 .DS_Store?
 .Trashes
 .Spotlight-V100
-bower_components
-bower_components/
+site/bower_components
+site/bower_components/
+server/node_modules
+server/node_modules/
