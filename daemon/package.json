@@ -1,0 +1,14 @@
+{
+  "name": "brewberry-pi-daemon",
+  "version": "0.0.1",
+  "description": "Daemon service for brewberry pi",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Chris Rowat",
+  "license": "MIT",
+  "dependencies": {
+    "pi-gpio": "0.0.6"
+  }
+}

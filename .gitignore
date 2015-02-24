@@ -6,3 +6,5 @@ site/bower_components
 site/bower_components/
 server/node_modules
 server/node_modules/
+daemon/node_modules
+daemon/node_modules/
