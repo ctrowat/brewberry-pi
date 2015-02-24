@@ -9,7 +9,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
 
-    <title>SB Admin 2 - Bootstrap Admin Theme</title>
+    <title>Brewberry Pi Admin Console</title>
 
     <!-- Bootstrap Core CSS -->
     <link href="../bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -33,7 +33,7 @@
 
 <body>
 
-    <div id="wrapper">
+      <div id="wrapper" ng-controller="brewberryController">
 
         <!-- Navigation -->
         <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
@@ -44,7 +44,7 @@
                     <span class="icon-bar"></span>
                     <span class="icon-bar"></span>
                 </button>
-                <a class="navbar-brand" href="index.html">SB Admin v2.0</a>
+                <a class="navbar-brand" href="index.html">Brewberry {{ id }}</a>
             </div>
             <!-- /.navbar-header -->
 
@@ -915,6 +915,9 @@
     <!-- jQuery -->
     <script src="../bower_components/jquery/dist/jquery.min.js"></script>
 
+    <!-- AngularJS -->
+    <script src="../bower_components/angularjs/angular.js"></script>
+  
     <!-- Bootstrap Core JavaScript -->
     <script src="../bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
 
@@ -927,6 +930,9 @@
 
     <!-- Custom Theme JavaScript -->
     <script src="../bower_components/startbootstrap-sb-admin-2/dist/js/sb-admin-2.js"></script>
+  
+    <!-- our js -->
+    <script src="index.js"></script>
 
 </body>
 </html>
