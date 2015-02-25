@@ -13,13 +13,14 @@ var emptyBrewEntry = {};
 var dbName = 'brewberry';
 var indexName = 'brewIndex';
 
-var gpio, spi;
-var debug = false;
-if (!_.isUndefined(process.argv[2])) {
-  debug = true;		
+var wpi, spi;
+var debug = true;
+if (debug) {
   console.log('debug on');
+  wpi = require('mock-wiring-pi.js');
+  spi = require('mock-spi.js');
 } else {
-  gpio = require('rpi-gpio');
+  wpi = require('wiring-pi');
   spi = require('pi-spi');
 }
 
@@ -27,16 +28,13 @@ var stop = false;
 var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
 var writeBits = function(bitArray, callback) {
-  if (bitArray.length === 0) { 
-    return; 
+  for ( var i = 0;i < bitArray.length;i++) {
+    wpi.digitalWrite(mosiPin, bitArray[i]);
+    wpi.digitalWrite(clockPin, 1);
+    wpi.digitalWrite(clockPin, 0);
   }
-  gpio.write(mosiPin, bitArray.pop());
-  gpio.write(clockPin, true);
-  gpio.write(clockPin, false, function(err) {
-    if (err) { throw err; }
-    writeBits(bitArray);
-  });
 };
+
 var convertToBits = function(byte) {
   var result = new Array(8);
   for(var i = 0;i < 8;i++) {
@@ -51,10 +49,11 @@ var outputLEDState = function(callback) {
       bitArray = bitArray.concat(convertToBits(ledState[i][j]));
     }
   }
-  gpio.write(clockPin, false);
+  wpi.digitalWrite(clockPin, 0);
   writeBits(bitArray);
-  gpio.write(clockPin, false);
+  wpi.digitalWrite(clockPin, 1);
   // sleep 1ms? or maybe we're just slow enough
+  wpi.delay(5);
 };
 
 var setupDb = function(callback) {  
@@ -85,25 +84,14 @@ var setupDb = function(callback) {
 
 var setup = function(callback) {
   var setupFunctions = [];
-  if (!debug) {
-    setupFunctions.push(function(callback) {
-      gpio.setup(clockPin, gpio.DIR_OUT, callback);
-    });
-    setupFunctions.push(function(callback) {
-      gpio.setup(mosiPin, gpio.DIR_OUT, callback); 
-    });
-  }
+  wpi.wiringPiSetupGpio();
+  wpi.pinMode(clockPin, wpi.OUTPUT);
+  wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
-  if (debug) {
-    console.log('setup');
-  } else {
-    gpio.setMode(gpio.MODE_BCM);
-  }
+  if (debug) { console.log('setup'); } 
   async.parallel(setupFunctions, function(err, results) {
       if (err) { 
-        if (debug) {
-          console.log('setup error: %s', err);
-        }
+        console.log('setup error: %s', err);
         process.exit(-1);
       }
     callback();
@@ -123,9 +111,7 @@ var loop = function() {
   // update the LEDs
   // update couchdb
   if (stop) { 
-    if (!debug) {
-      gpio.destroy();
-    }
+    //gpio.destroy();
   }
   else { 
     setTimeout(loop, 500); 
