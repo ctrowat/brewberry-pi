@@ -104,6 +104,9 @@ var loop = function() {
   }
   // check couchdb for list of channels to sample
   // sample the A/D converter
+  for (var i = 0;i < 3;i++) {
+    ledState[piLed][i] = Math.floor(Math.random() * 256);
+  }
   outputLEDState();
   // update couchdb
   if (stop) { 
