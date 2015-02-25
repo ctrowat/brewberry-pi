@@ -15,13 +15,13 @@ var indexName = 'brewIndex';
 
 var wpi, spi;
 var debug = true;
-var mock = false;
+var mock = true;
 if (debug) {
   console.log('debug on');
 }
 if (mock) {
-  wpi = require('mock-wiring-pi.js');
-  spi = require('mock-spi.js');
+  wpi = require('./mock-wiring-pi.js');
+  spi = require('./mock-spi.js');
 } else {
   wpi = require('wiring-pi');
   spi = require('pi-spi');
@@ -40,6 +40,7 @@ var outputLEDState = function(callback) {
       }
     }
   }
+  console.log('['+bitArray.join(',')+']');
   wpi.digitalWrite(clockPin, 1);
   wpi.digitalWrite(clockPin, 0);
   for ( var i = 0;i < bitArray.length;i++) {

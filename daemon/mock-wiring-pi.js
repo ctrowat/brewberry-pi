@@ -1,7 +1,5 @@
-return {
-  digitalWrite: function() {},
-  delay: function() {},
-  wiringPiSetupGpio: function() {},
-  pinMode: function() {},
-  OUTPUT: 1
-};
+exports.wiringPiSetupGpio = function() {};
+exports.pinMode = function() {};
+exports.digitalWrite = function() {};
+exports.delay = function() {};
+exports.OUTPUT = 1;
