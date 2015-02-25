@@ -12,6 +12,7 @@ var emptyIndexEntry = {brews: []};
 var emptyBrewEntry = { adChannel: -1};
 var dbName = 'brewberry';
 var indexName = 'brewIndex';
+var spiChannelId;
 
 var wpi, spi;
 var debug = true;
@@ -81,6 +82,7 @@ var setupDb = function(callback) {
 var setup = function(callback) {
   var setupFunctions = [];
   wpi.wiringPiSetupGpio();
+  spiChannelId = wpi.wiringPiSPISetup(0, 2000000);
   wpi.pinMode(clockPin, wpi.OUTPUT);
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
@@ -98,11 +100,19 @@ process.on('SIGINT', function() {
   stop = true;
 });
 
+var sampleAdc = function(channel) {
+  var data = [1, (8+channel)<<4,0];
+  var result = wpi.wiringPiSPIDataRW(spiChannelId, data);
+  console.log(result);
+  return ((result[1]&3 << 8) + result[2];
+};
+
 var loop = function() {
   if (debug) {
     console.log('loop');
   }
   // check couchdb for list of channels to sample
+    sampleAdc(0);
   // sample the A/D converter
   for (var i = 0;i < 3;i++) {
     ledState[piLed][i] = Math.floor(Math.random() * 256);
