@@ -83,6 +83,7 @@ var setup = function(callback) {
   var setupFunctions = [];
   wpi.wiringPiSetupGpio();
   spiChannelId = wpi.wiringPiSPISetup(0, 2000000);
+  if (debug) { console.log('spiChannelId: %s',spiChannelId); }
   wpi.pinMode(clockPin, wpi.OUTPUT);
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
@@ -101,10 +102,11 @@ process.on('SIGINT', function() {
 });
 
 var sampleAdc = function(channel) {
-  var data = [1, (8+channel)<<4,0];
-  var result = wpi.wiringPiSPIDataRW(spiChannelId, data);
-  console.log(result);
-  return ((result[1]&3 << 8) + result[2];
+  var buf = new Buffer([1, (8+channel)<<4,0]);
+  console.log('[%s,%s,%s]',buf[0],buf[1],buf[2]);
+  wpi.wiringPiSPIDataRW(0, buf);
+  console.log(buf);
+  return (buf[1]&3 << 8) + buf[2];
 };
 
 var loop = function() {
