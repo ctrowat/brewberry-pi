@@ -6,7 +6,7 @@ var async = require('async');
 var nodeCouchDb = require('node-couchdb');
 var couch = new nodeCouchDb(couchHost, couchPort);
 var piLed = 0;
-var clockPin = 21;
+var clockPin = 17;
 var mosiPin = 18;
 var emptyIndexEntry = {brews: []};
 var emptyBrewEntry = { adChannel: -1};
@@ -15,7 +15,7 @@ var indexName = 'brewIndex';
 
 var wpi, spi;
 var debug = true;
-var mock = true;
+var mock = false;
 if (debug) {
   console.log('debug on');
 }
