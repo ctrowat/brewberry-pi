@@ -29,24 +29,22 @@ var newIndexEntry = function(name, adcChannel, startDate) {
   };
 };
 
-var spiChannelId;
-
-var wpi, spi;
+var wpi, spi, spiLib;
 var debug = true;
-var mock = true;
+var mock = false;
 if (debug) {
   console.log('debug on');
 }
 if (mock) {
   wpi = require('./mock-wiring-pi.js');
-  spi = require('./mock-spi.js');
+  spiLib = require('./mock-spi.js');
 } else {
   wpi = require('wiring-pi');
-  spi = require('pi-spi');
+  spiLib = require('pi-spi');
 }
 
 var stop = false;
-var ledState = [[255,128,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
+var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
 var outputLEDState = function(callback) {
   if (debug) { console.log('output LED state'); }
@@ -130,8 +128,7 @@ var setupDb = function(callback) {
 var setup = function(callback) {
   var setupFunctions = [];
   wpi.wiringPiSetupGpio();
-  spiChannelId = wpi.wiringPiSPISetup(0, 2000000);
-  if (debug) { console.log('spiChannelId: %s',spiChannelId); }
+  spi = spiLib.initialize('/dev/spidev0.0');
   wpi.pinMode(clockPin, wpi.OUTPUT);
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
@@ -149,22 +146,34 @@ process.on('SIGINT', function() {
   stop = true;
 });
 
-var sampleAdc = function(channel) {
+var sampleAdc = function(channel, callback) {
   // take 1 reading, throw it away, take 10 more and average them
   var buf = new Buffer([1, (8+channel)<<4,0]);
-  wpi.wiringPiSPIDataRW(0, buf);
-  var adcRead = (buf[1]&3 << 8) + buf[2];
-  adcRead = (adcRead * 3.3 / 10.24) - 50.0;
-  return adcRead;
+  console.log('[%s,%s,%s]',buf[0],buf[1],buf[2]);
+  spi.transfer(buf, buf.length, function(e,d) {
+          if (e) console.error(e);
+          else {
+            var adcRead = (buf[1]&3 << 8) + buf[2];
+            adcRead = (adcREad * 3.3 / 10.24) - 50.0;
+            callback(null, adcRead);
+          }
+  });
 };
 
 var getActiveBrews = function() {
-  //brewberry_index/_all_docs
+  console.log('get');
   couch.get(indexDbName,'_design/all/_view/all', null, function(err, res) {
     var adcMapping = [];
     _.each(res.data.rows, function(row) {
+      console.log('data row'); 
       var adcValue;
-      if (row.value.adc_channel >= 0) {
+      var samplesToTake = [];
+      if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
+        for (var i = 0;i < 11; i++) {
+          samplesToTake.push(function(callback) { sampleAdc(row.value.adc_channel, callback); });
+        }
+      
+
         var adcReadings = [];
         sampleAdc(row.value.adc_channel);
         for (var i = 0;i < 10;i++) {
@@ -172,14 +181,14 @@ var getActiveBrews = function() {
         }
         adcValue = _.reduce(adcReadings, function(memo, num) { return memo + num; }, 0) / 10.0;
       } else {
-        adcValue = 23;
+        adcValue = -40;
       }
       console.log('%s adc channel %s value: %s', row.value._id, row.value.adc_channel, adcValue);
       // insert into temps db the value
-      /*for (var i = 0;i < 3;i++) {
+      for (var i = 0;i < 3;i++) {
         ledState[piLed][i] = Math.floor(Math.random() * 256);
       }
-      outputLEDState();*/
+      outputLEDState();
     });
   });
 };
