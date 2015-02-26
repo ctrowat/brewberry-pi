@@ -8,15 +8,32 @@ var couch = new nodeCouchDb(couchHost, couchPort);
 var piLed = 0;
 var clockPin = 17;
 var mosiPin = 18;
-var emptyIndexEntry = {brews: []};
+var emptyIndexEntry = {};
 var emptyBrewEntry = { adChannel: -1};
-var dbName = 'brewberry';
-var indexName = 'brewIndex';
+var indexDbName = 'brewberry_index';
+var tempDbName = 'brewberry_temps';
+var listAllView = {
+  '_id':'_design/all',
+  'views': {
+      'all': {
+        'map': 'function(doc) { emit(doc._id, doc); }'
+      }
+  }
+};
+
+var newIndexEntry = function(name, adcChannel, startDate) {
+  return {
+    '_id':name,
+    'adc_channel':adcChannel,
+    'started':startDate
+  };
+};
+
 var spiChannelId;
 
 var wpi, spi;
 var debug = true;
-var mock = false;
+var mock = true;
 if (debug) {
   console.log('debug on');
 }
@@ -56,25 +73,56 @@ var outputLEDState = function(callback) {
 var setupDb = function(callback) {  
   couch.listDatabases(function(err, databases) {
     if (err) { return callback(err); }
-    var foundDb = false;
+    var foundIndexDb = false;
+    var foundTempDb = false;
     _.each(databases, function(db) {
-      if (db === dbName) {
-        foundDb = true;
-        if (debug) { console.log('found existing db'); }
+      if (db === indexDbName) {
+        foundIndexDb = true;
+        if (debug) { console.log('found existing index db'); }        
+      }
+      else if (db === tempDbName) {
+        foundTempDb = true;
+        if (debug) { console.log('found existing temp db'); }
       }
     });
-    if (foundDb) {
-      return callback(null, true);
-    }
-    if (debug) { console.log('creating db'); }
-    // create a new database
-    couch.createDatabase(dbName, function(err) {
-      if (err) { return callback(err); }
-      if (debug) { console.log('creating empty index'); }
-      couch.insert(dbName, emptyIndexEntry, function(err, resData) {
-          if (err) { return callback(err); }
-        callback(null, true);
+    var tasks = [];
+    if (!foundIndexDb) {
+      tasks.push(function(callback) {
+        if (debug) { console.log('creating index db'); }
+        // create a new database
+        couch.createDatabase(indexDbName, function(err) {
+          if (err) { callback(err); }
+          else { 
+            if (debug) { console.log('inserting index views'); }
+            couch.insert(indexDbName, listAllView, function(err) {
+              if (err) { callback(err); }
+              else { callback(null); }
+            });
+          }
+        });
       });
+    }
+    if (!foundTempDb) {
+      tasks.push(function(callback) {
+        if (debug) { console.log('creating temps db'); }
+        couch.createDatabase(tempDbName, function(err) {
+          if (err) { callback(err); }
+          else { 
+            if (debug) { console.log('inserting temps views'); }
+            couch.insert(tempDbName, listAllView, function(err) {
+              if (err) { console.log('1'); callback(err); }
+              else { callback(null); }
+            });
+          }
+        });
+      });
+    }
+    async.parallel(tasks, function(err, results) {
+      if (err) {
+        callback(err);
+      } else {
+        callback(null, true);
+      }
     });
   });    
 };
@@ -102,25 +150,42 @@ process.on('SIGINT', function() {
 });
 
 var sampleAdc = function(channel) {
+  // take 1 reading, throw it away, take 10 more and average them
   var buf = new Buffer([1, (8+channel)<<4,0]);
-  console.log('[%s,%s,%s]',buf[0],buf[1],buf[2]);
   wpi.wiringPiSPIDataRW(0, buf);
-  console.log(buf);
-  return (buf[1]&3 << 8) + buf[2];
+  var adcRead = (buf[1]&3 << 8) + buf[2];
+  adcRead = (adcRead * 3.3 / 10.24) - 50.0;
+  return adcRead;
+};
+
+var getActiveBrews = function() {
+  //brewberry_index/_all_docs
+  couch.get(indexDbName,'_design/all/_view/all', null, function(err, res) {
+    var adcMapping = [];
+    _.each(res.data.rows, function(row) {
+      var adcValue;
+      if (row.value.adc_channel >= 0) {
+        var adcReadings = [];
+        sampleAdc(row.value.adc_channel);
+        for (var i = 0;i < 10;i++) {
+          adcReadings[i] = sampleAdc(row.value.adc_channel);
+        }
+        adcValue = _.reduce(adcReadings, function(memo, num) { return memo + num; }, 0) / 10.0;
+      } else {
+        adcValue = 23;
+      }
+      console.log('%s adc channel %s value: %s', row.value._id, row.value.adc_channel, adcValue);
+      // insert into temps db the value
+      /*for (var i = 0;i < 3;i++) {
+        ledState[piLed][i] = Math.floor(Math.random() * 256);
+      }
+      outputLEDState();*/
+    });
+  });
 };
 
 var loop = function() {
-  if (debug) {
-    console.log('loop');
-  }
-  // check couchdb for list of channels to sample
-    sampleAdc(0);
-  // sample the A/D converter
-  for (var i = 0;i < 3;i++) {
-    ledState[piLed][i] = Math.floor(Math.random() * 256);
-  }
-  outputLEDState();
-  // update couchdb
+  getActiveBrews();
   if (stop) { 
     //gpio.destroy();
   }
