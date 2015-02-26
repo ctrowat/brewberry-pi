@@ -151,40 +151,56 @@ var sampleAdc = function(channel, callback) {
   var buf = new Buffer([1, (8+channel)<<4,0]);
   console.log('[%s,%s,%s]',buf[0],buf[1],buf[2]);
   spi.transfer(buf, buf.length, function(e,d) {
-          if (e) console.error(e);
-          else {
-            var adcRead = (buf[1]&3 << 8) + buf[2];
-            adcRead = (adcREad * 3.3 / 10.24) - 50.0;
-            callback(null, adcRead);
-          }
+    if (e) console.error(e);
+    else {
+      var adcRead = (buf[1]&3 << 8) + buf[2];
+      adcRead = (adcREad * 3.3 / 10.24) - 50.0;
+      callback(null, adcRead);
+    }
   });
+};
+
+var takeSample = function(channel, callback) {
+  if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
+    var samplesToTake = [];
+    // take 11 samples
+    for (var i = 0;i < 11; i++) {
+      samplesToTake.push(function(innerCallback) { sampleAdc(row.value.adc_channel, innerCallback); });
+    }
+    async.serial(samplesToTake, function(err, results) {
+      if (err) { console.log('error taking samples for %s: %s', row.value._id, err); }
+      else {
+        var result = 0;
+        // throw away the first sample and average the rest
+        for (var i = 0;i<10;i++) {
+          result += results[i+1];
+        }
+        result = result / 10.0;
+        var sampleTime = new Date();
+        console.log('adc channel %s returned temp %s at %s', row.value.adc_channel, result, 
+          sampleTime.getFullYear() + '-' sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes());
+        callback(null, result);
+      }
+    });
+  } else {
+    callback(null, -40);
+  }
 };
 
 var getActiveBrews = function() {
   console.log('get');
   couch.get(indexDbName,'_design/all/_view/all', null, function(err, res) {
-    var adcMapping = [];
+    var samplesToTake = [];
+    var resultMap = [];
     _.each(res.data.rows, function(row) {
-      console.log('data row'); 
-      var adcValue;
-      var samplesToTake = [];
-      if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
-        for (var i = 0;i < 11; i++) {
-          samplesToTake.push(function(callback) { sampleAdc(row.value.adc_channel, callback); });
-        }
-      
-
-        var adcReadings = [];
-        sampleAdc(row.value.adc_channel);
-        for (var i = 0;i < 10;i++) {
-          adcReadings[i] = sampleAdc(row.value.adc_channel);
-        }
-        adcValue = _.reduce(adcReadings, function(memo, num) { return memo + num; }, 0) / 10.0;
-      } else {
-        adcValue = -40;
-      }
-      console.log('%s adc channel %s value: %s', row.value._id, row.value.adc_channel, adcValue);
-      // insert into temps db the value
+      resultMap[samplesToTake.length] = row.value._id;
+      samplesToTake.push(function(callback) { takeSample(row.value.adc_channel, callback); });
+    });
+    async.serial(samplesToTake, function(err, results) {
+      _.each(results, function(result, index) {
+        console.log('%s temp: %s', resultMap[index], result);
+      });
+      // insert the value into the temps db
       for (var i = 0;i < 3;i++) {
         ledState[piLed][i] = Math.floor(Math.random() * 256);
       }
