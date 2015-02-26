@@ -149,25 +149,26 @@ process.on('SIGINT', function() {
 var sampleAdc = function(channel, callback) {
   // take 1 reading, throw it away, take 10 more and average them
   var buf = new Buffer([1, (8+channel)<<4,0]);
-  console.log('[%s,%s,%s]',buf[0],buf[1],buf[2]);
   spi.transfer(buf, buf.length, function(e,d) {
     if (e) console.error(e);
     else {
-      var adcRead = (buf[1]&3 << 8) + buf[2];
-      adcRead = (adcREad * 3.3 / 10.24) - 50.0;
+      console.log('[%s,%s,%s]',d[0],d[1],d[2]);
+      var adcRead = (d[1]&3 << 8) + d[2];
+      console.log('adc: %s', adcRead); 
+      adcRead = (adcRead * 3.3 / 10.24) - 50.0;
       callback(null, adcRead);
     }
   });
 };
 
 var takeSample = function(channel, callback) {
-  if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
+  if (channel >= 0 && channel <= 7) {
     var samplesToTake = [];
     // take 11 samples
     for (var i = 0;i < 11; i++) {
-      samplesToTake.push(function(innerCallback) { sampleAdc(row.value.adc_channel, innerCallback); });
+      samplesToTake.push(function(innerCallback) { sampleAdc(channel, innerCallback); });
     }
-    async.serial(samplesToTake, function(err, results) {
+    async.series(samplesToTake, function(err, results) {
       if (err) { console.log('error taking samples for %s: %s', row.value._id, err); }
       else {
         var result = 0;
@@ -177,8 +178,8 @@ var takeSample = function(channel, callback) {
         }
         result = result / 10.0;
         var sampleTime = new Date();
-        console.log('adc channel %s returned temp %s at %s', row.value.adc_channel, result, 
-          sampleTime.getFullYear() + '-' sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes());
+        console.log('adc channel %s returned temp %s at %s', channel, result, 
+          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes());
         callback(null, result);
       }
     });
@@ -196,7 +197,7 @@ var getActiveBrews = function() {
       resultMap[samplesToTake.length] = row.value._id;
       samplesToTake.push(function(callback) { takeSample(row.value.adc_channel, callback); });
     });
-    async.serial(samplesToTake, function(err, results) {
+    async.series(samplesToTake, function(err, results) {
       _.each(results, function(result, index) {
         console.log('%s temp: %s', resultMap[index], result);
       });
