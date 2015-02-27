@@ -149,10 +149,16 @@ process.on('SIGINT', function() {
 var sampleAdc = function(channel, callback) {
   // take 1 reading, throw it away, take 10 more and average them
   var buf = new Buffer([1, (8+channel)<<4,0]);
-  spi.transfer(buf, buf.length, function(e,d) {
+  spi.transfer(buf, function(e,d) {
     if (e) console.error(e);
     else {
-      console.log('[%s,%s,%s]',d[0],d[1],d[2]);
+      var result = "";
+      for (var i = 0;i < 3;i++) {
+        for (var j = 0;j < 8;j++) {
+          result += d[i] >> j & 1 ? "1" : "0";
+        }
+      }
+      console.log('[%s,%s,%s] %s',d[0],d[1],d[2], result);
       var adcRead = (d[1]&3 << 8) + d[2];
       console.log('adc: %s', adcRead); 
       adcRead = (adcRead * 3.3 / 10.24) - 50.0;
@@ -169,7 +175,7 @@ var takeSample = function(channel, callback) {
       samplesToTake.push(function(innerCallback) { sampleAdc(channel, innerCallback); });
     }
     async.series(samplesToTake, function(err, results) {
-      if (err) { console.log('error taking samples for %s: %s', row.value._id, err); }
+      if (err) { console.log('error taking samples for channel %s: %s', channel, err); }
       else {
         var result = 0;
         // throw away the first sample and average the rest
@@ -179,7 +185,7 @@ var takeSample = function(channel, callback) {
         result = result / 10.0;
         var sampleTime = new Date();
         console.log('adc channel %s returned temp %s at %s', channel, result, 
-          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes());
+          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());
         callback(null, result);
       }
     });
