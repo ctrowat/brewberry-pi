@@ -1,11 +1,13 @@
 var express = require('express');
 var path = require('path');
 var _ = require('underscore');
+var request = require('request');
 var app = express();
 var nodeCouchDb = require('node-couchdb');
 var couch = new nodeCouchDb('localhost', 5984);
 var apiRouter = express.Router();
 var dbName = "BREWBERRY";
+var dbUrl = "http://127.0.0.1:5984";
 
 apiRouter.get('/brews/list',function (req, res) {
   // pull the list from couchdb
@@ -64,12 +66,13 @@ apiRouter.post('/brews/finish',function (req, res) {
   res.send('finished!');
 });
 
-//apiRouter.use(function (req, res, next) {
-//  console.log('apiRouter: %s %s %s', req.method, req.url, req.path);
-//});
-
 // hook up the api router
 app.use('/api',apiRouter);
+// and db proxy
+app.use('/db', function(req, res) {
+  var url = dbUrl + req.url;
+  req.pipe(request(utl)).pipe(res);
+});
 // and the static page handler including the redirect for bower components
 app.use('/bower_components', express.static(path.join(__dirname, '../site/bower_components/')));
 app.use(express.static(path.join(__dirname, '../site/pages/')));

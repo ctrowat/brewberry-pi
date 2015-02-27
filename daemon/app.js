@@ -155,7 +155,7 @@ var sampleAdc = function(channel, callback) {
       var result = "";
       for (var i = 0;i < 3;i++) {
         for (var j = 0;j < 8;j++) {
-          result += d[i] >> j & 1 ? "1" : "0";
+          result += (d[i] >> j) & 1 ? "1" : "0";
         }
       }
       console.log('[%s,%s,%s] %s',d[0],d[1],d[2], result);
