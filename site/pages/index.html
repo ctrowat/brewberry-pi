@@ -53,9 +53,9 @@
                         <li>
                             <a href="index.html"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
                         </li>
-                        <li ng-repeat="brew in brews">
-                          <a href="brew.html?{{brew.id}}"><i class="fa fa-dashboard fa-fw"></i> {{brew.name}}</a>
-                        </li>
+                        <!--<li ng-repeat="brew in brews">
+                          <a ng-click="showBrew(brew)"><i class="fa fa-beer fa-fw"></i> {{brew.name}}</a>
+                        </li>-->
                     </ul>
                 </div>
             </div>
@@ -71,9 +71,9 @@
             <!-- /.row -->
             <div class="row">
                 <div class="col-lg-8">
-                    <div class="panel panel-default">
+                    <div class="panel panel-default" ng-repeat="brew in brews">
                         <div class="panel-heading">
-                            <i class="fa fa-bar-chart-o fa-fw"></i> Area Chart Example
+                            <i class="fa fa-bar-chart-o fa-fw"></i> {{brew.name}}
                             <div class="pull-right">
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
@@ -81,14 +81,7 @@
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu">
-                                        <li><a href="#">Action</a>
-                                        </li>
-                                        <li><a href="#">Another action</a>
-                                        </li>
-                                        <li><a href="#">Something else here</a>
-                                        </li>
-                                        <li class="divider"></li>
-                                        <li><a href="#">Separated link</a>
+                                        <li><a href="#" ng-click="finishBrew(brew)">Mark finished</a>
                                         </li>
                                     </ul>
                                 </div>

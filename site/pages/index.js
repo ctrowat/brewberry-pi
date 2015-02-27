@@ -3,7 +3,13 @@ var app = angular.module('demo', ['CornerCouch'])
   $scope.id = "pi";
   $scope.server = cornercouch();
   $scope.server.uri = "http://localhost:3000/db";
-  $scope.server.getDB('brewberry_index').getInfo().success(function(a) { console.dir(a); });
+  var db = $scope.server.getDB('brewberry_index');
+  db.query('all','all').success(function(data) { 
+    console.dir(data); 
+  });
   $scope.brews = [{id:"testbrew", name:"something awesome"}];
+  $scope.finishBrew = function(brew) {
+    console.dir(brew);
+  };
 });
 angular.bootstrap(document, ['demo']);
