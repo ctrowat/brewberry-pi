@@ -40,7 +40,7 @@ if (mock) {
   spiLib = require('./mock-spi.js');
 } else {
   wpi = require('wiring-pi');
-  spiLib = require('pi-spi');
+  spiLib = require('spi');
 }
 
 var stop = false;
@@ -128,7 +128,7 @@ var setupDb = function(callback) {
 var setup = function(callback) {
   var setupFunctions = [];
   wpi.wiringPiSetupGpio();
-  spi = spiLib.initialize('/dev/spidev0.0');
+  spi = new spiLib.Spi('/dev/spidev0.0', {'mode':spiLib.MODE['MODE_0']},function(s) { s.open(); });
   wpi.pinMode(clockPin, wpi.OUTPUT);
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
@@ -148,22 +148,11 @@ process.on('SIGINT', function() {
 
 var sampleAdc = function(channel, callback) {
   // take 1 reading, throw it away, take 10 more and average them
-  var buf = new Buffer([1, (8+channel)<<4,0]);
-  spi.transfer(buf, function(e,d) {
-    if (e) console.error(e);
-    else {
-      var result = "";
-      for (var i = 0;i < 3;i++) {
-        for (var j = 0;j < 8;j++) {
-          result += (d[i] >> j) & 1 ? "1" : "0";
-        }
-      }
-      console.log('[%s,%s,%s] %s',d[0],d[1],d[2], result);
-      var adcRead = (d[1]&3 << 8) + d[2];
-      console.log('adc: %s', adcRead); 
-      adcRead = (adcRead * 3.3 / 10.24) - 50.0;
-      callback(null, adcRead);
-    }
+  var inBuf = new Buffer([1,(8+channel)<<4,0]);
+  var outBuf = new Buffer([0,0,0]);
+  spi.transfer(inBuf, outBuf, function(device, buf) {
+    var adcRead = ((buf[1] & 0x03) << 8) + (buf[2]);
+    callback(null, (adcRead * 3.3 / 10.24) - 50.0);
   });
 };
 
@@ -184,8 +173,8 @@ var takeSample = function(channel, callback) {
         }
         result = result / 10.0;
         var sampleTime = new Date();
-        console.log('adc channel %s returned temp %s at %s', channel, result, 
-          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());
+        /*console.log('adc channel %s returned temp %s at %s', channel, result, 
+          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());*/
         callback(null, result);
       }
     });

@@ -6,9 +6,9 @@
   "dependencies": {
     "async": "^0.9.0",
     "node-couchdb": "^0.3.1",
-    "pi-spi": "^1.0.0",
     "underscore": "^1.8.2",
-    "wiring-pi": "^2.0.0"
+    "wiring-pi": "^2.0.0",
+    "spi": "*"
   },
   "devDependencies": {},
   "scripts": {
