@@ -62,27 +62,20 @@
         </nav>
 
         <div id="page-wrapper">
-            <div class="row">
-                <div class="col-lg-12">
-                    <h1 class="page-header">Dashboard</h1>
-                </div>
-                <!-- /.col-lg-12 -->
-            </div>
-            <!-- /.row -->
-            <div class="row">
+            <div class="row" style="padding-top:20px">
                 <div class="col-lg-8">
                     <div class="panel panel-default" ng-repeat="brew in brews">
                         <div class="panel-heading">
                             <i class="fa fa-bar-chart-o fa-fw"></i> {{brew.name}}
-                            <div class="pull-right">
+                            <div class="pull-right" ng-show="showActions(brew)">
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
                                         Actions
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu">
-                                        <li><a href="#" ng-click="finishBrew(brew)">Mark finished</a>
-                                        </li>
+                                        <li><a href="#" ng-click="finishBrew(brew)" ng-show="showFinish(brew)">Mark finished</a></li>
+                                        <li><a href="#" ng-click="startBrew(brew)" ng-show="showStart(brew)">Start</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -93,16 +86,34 @@
                         </div>
                         <!-- /.panel-body -->
                     </div>
+                    <div class="panel panel-green" ng-show="brews.length === 0">
+                        <div class="panel-heading">
+                            <div class="row">
+                                <div class="col-xs-3">
+                                    <i class="fa fa-beer fa-5x"></i>
+                                </div>
+                                <div class="col-xs-9 text-right">
+                                    <div class="huge">0 Active Brews</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="panel-footer">
+                            <span class="pull-left">So get on it!</span>
+                            <div class="clearfix"></div>
+                        </div>
+                    </div>
                 </div>
-                <!-- /.col-lg-8 -->
                 <div class="col-lg-4">
                     <div class="panel panel-default">
                         <div class="panel-heading">
-                            <i class="fa fa-bell fa-fw"></i> Notifications Panel
+                            <i class="fa fa-exclamation fa-fw"></i> Events
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div class="list-group">
+                            <div ng-show="events.length === 0">
+                              Nothing to see here!
+                            </div>
+                            <div class="list-group" ng-show="events.length > 0">
                                 <a href="#" class="list-group-item">
                                     <i class="fa fa-comment fa-fw"></i> New Comment
                                     <span class="pull-right text-muted small"><em>4 minutes ago</em>

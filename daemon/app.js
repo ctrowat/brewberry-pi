@@ -12,22 +12,6 @@ var emptyIndexEntry = {};
 var emptyBrewEntry = { adChannel: -1};
 var indexDbName = 'brewberry_index';
 var tempDbName = 'brewberry_temps';
-var listAllView = {
-  '_id':'_design/all',
-  'views': {
-      'all': {
-        'map': 'function(doc) { emit(doc._id, doc); }'
-      }
-  }
-};
-
-var newIndexEntry = function(name, adcChannel, startDate) {
-  return {
-    '_id':name,
-    'adc_channel':adcChannel,
-    'started':startDate
-  };
-};
 
 var wpi, spi, spiLib;
 var debug = true;
@@ -56,7 +40,7 @@ var outputLEDState = function(callback) {
       }
     }
   }
-  console.log('['+bitArray.join(',')+']');
+  console.log('['+bitArray.join('')+']');
   wpi.digitalWrite(clockPin, 1);
   wpi.digitalWrite(clockPin, 0);
   for ( var i = 0;i < bitArray.length;i++) {
@@ -64,7 +48,7 @@ var outputLEDState = function(callback) {
     wpi.digitalWrite(clockPin, 1);
     wpi.digitalWrite(clockPin, 0);
   }
-  wpi.delay(5); // 5ms should be plenty to make sure we're over 500mS with the clock low
+  wpi.delay(2); // 5ms should be plenty to make sure we're over 500mS with the clock low
   wpi.digitalWrite(clockPin, 1);
 };
 
@@ -76,52 +60,17 @@ var setupDb = function(callback) {
     _.each(databases, function(db) {
       if (db === indexDbName) {
         foundIndexDb = true;
-        if (debug) { console.log('found existing index db'); }        
       }
       else if (db === tempDbName) {
         foundTempDb = true;
-        if (debug) { console.log('found existing temp db'); }
       }
     });
-    var tasks = [];
     if (!foundIndexDb) {
-      tasks.push(function(callback) {
-        if (debug) { console.log('creating index db'); }
-        // create a new database
-        couch.createDatabase(indexDbName, function(err) {
-          if (err) { callback(err); }
-          else { 
-            if (debug) { console.log('inserting index views'); }
-            couch.insert(indexDbName, listAllView, function(err) {
-              if (err) { callback(err); }
-              else { callback(null); }
-            });
-          }
-        });
-      });
+      callback("Could not locate index DB!");
     }
     if (!foundTempDb) {
-      tasks.push(function(callback) {
-        if (debug) { console.log('creating temps db'); }
-        couch.createDatabase(tempDbName, function(err) {
-          if (err) { callback(err); }
-          else { 
-            if (debug) { console.log('inserting temps views'); }
-            couch.insert(tempDbName, listAllView, function(err) {
-              if (err) { console.log('1'); callback(err); }
-              else { callback(null); }
-            });
-          }
-        });
-      });
+      callback("Could not locate temps DB!");
     }
-    async.parallel(tasks, function(err, results) {
-      if (err) {
-        callback(err);
-      } else {
-        callback(null, true);
-      }
-    });
   });    
 };
 
@@ -172,9 +121,6 @@ var takeSample = function(channel, callback) {
           result += results[i+1];
         }
         result = result / 10.0;
-        var sampleTime = new Date();
-        /*console.log('adc channel %s returned temp %s at %s', channel, result, 
-          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());*/
         callback(null, result);
       }
     });
@@ -184,7 +130,6 @@ var takeSample = function(channel, callback) {
 };
 
 var getActiveBrews = function() {
-  console.log('get');
   couch.get(indexDbName,'_design/all/_view/all', null, function(err, res) {
     var samplesToTake = [];
     var resultMap = [];
@@ -196,7 +141,11 @@ var getActiveBrews = function() {
       _.each(results, function(result, index) {
         console.log('%s temp: %s', resultMap[index], result);
       });
+      // log for 1 minute, then post the high/low/avg to the database
       // insert the value into the temps db
+        var sampleTime = new Date();
+        /*console.log('adc channel %s returned temp %s at %s', channel, result, 
+          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());*/
       for (var i = 0;i < 3;i++) {
         ledState[piLed][i] = Math.floor(Math.random() * 256);
       }
@@ -207,10 +156,7 @@ var getActiveBrews = function() {
 
 var loop = function() {
   getActiveBrews();
-  if (stop) { 
-    //gpio.destroy();
-  }
-  else { 
+  if (!stop) { 
     setTimeout(loop, 500); 
   }
 };
