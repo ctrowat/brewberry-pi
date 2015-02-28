@@ -64,9 +64,9 @@
         <div id="page-wrapper">
             <div class="row" style="padding-top:20px">
                 <div class="col-lg-8">
-                    <div class="panel panel-default" ng-repeat="brew in brews">
+                    <div class="panel panel-default" ng-repeat="brew in brews" brew-repeat-directive>
                         <div class="panel-heading">
-                            <i class="fa fa-bar-chart-o fa-fw"></i> {{brew.name}}
+                            <i class="fa fa-beer fa-fw"></i> {{brew.name}}
                             <div class="pull-right" ng-show="showActions(brew)">
                                 <div class="btn-group">
                                     <button type="button" class="btn btn-default btn-xs dropdown-toggle" data-toggle="dropdown">
@@ -82,7 +82,19 @@
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                            <div id="morris-area-chart"></div>
+                          <div class="row" style="padding-bottom:10px;">
+                            <div class="start_row" ng-show="brew.start_date">
+                              <div class="col-sm-2 text-right"><strong>Started:</strong></div>
+                              <div class="col-sm-10 text-left">{{brew.start_date}}</div>
+                            </div>
+                          </div>
+                          <div class="brew-chart"></div>
+                          <div class="brew-table">
+                            <ul>
+                              <li ng-repeat="temp in brew.temps">{{temp.date}} - {{temp.temp}}
+                              </li>
+                            </ul>
+                          </div>
                         </div>
                         <!-- /.panel-body -->
                     </div>

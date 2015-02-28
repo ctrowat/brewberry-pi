@@ -7,6 +7,7 @@ var couch = new nodeCouchDb(couchHost, couchPort);
 
 var indexView = {
   '_id':'_design/index_db',
+  'language':'javascript',
   'views': {
     'all': {
       'map': 'function(doc) { emit(doc._id, doc); }'
@@ -16,9 +17,10 @@ var indexView = {
 
 var tempsView = {
   '_id':'_design/temps_db',
+  'language':'javascript',
   'views': {
-    'by_name': {
-      'map': 'function(doc) { emit(doc.name, doc); }'
+    'by_brew_id': {
+      'map': 'function(doc) { emit(doc.brew_id, doc); }'
     },
     'by_id': {
       'map': 'function(doc) { emit(doc._id, doc); }'
@@ -28,6 +30,7 @@ var tempsView = {
 
 var eventsView = {
   '_id':'_design/events_db',
+  'language':'javascript',
   'views': {
     'all': {
       'map': 'function(doc) { emit(doc._id, doc); }'
