@@ -5,6 +5,14 @@ var app = angular.module('demo', ['CornerCouch'])
     //console.dir(scope.brew.temps);
     //console.dir(element.find('.brew-table'));
     // we should be able to make a chart with this!
+    // we could probably also hook up a callback to refresh the chart every minute or so
+    new Morris.Line({
+      'element':element.find('.brew-chart')[0],
+      'data':scope.brew.temps,
+      'xkey':'date',
+      'ykeys':['temp'],
+      labels:['Temperature']
+    });
   }
 })
 .controller('brewberryController', function($scope, cornercouch) {

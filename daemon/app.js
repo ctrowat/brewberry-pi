@@ -31,7 +31,6 @@ var stop = false;
 var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
 var outputLEDState = function(callback) {
-  if (debug) { console.log('output LED state'); }
   var bitArray = new Array(144);
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 3;j++) {
