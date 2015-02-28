@@ -2,8 +2,6 @@
 var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
-    //console.dir(scope.brew.temps);
-    //console.dir(element.find('.brew-table'));
     // we should be able to make a chart with this!
     // we could probably also hook up a callback to refresh the chart every minute or so
     new Morris.Line({
@@ -29,7 +27,7 @@ var app = angular.module('demo', ['CornerCouch'])
         name: row.value.name ? row.value.name : 'NO NAME (' + row.id +')',
         id: row.id,
         start_date: row.value.start_date,
-        finish_date: row.value.finish_date,
+        finished_date: row.value.finished_date,
         temps: []
       };
     });
@@ -52,18 +50,18 @@ var app = angular.module('demo', ['CornerCouch'])
     // add a start date
   };
   $scope.finishBrew = function(brew) {
-    console.log('Mark this brew as finished');
-    console.dir(brew);
-    // insert the finished date
+    var finishedDate = new Date();
+    var indexDoc = indexDb.getDoc();
+    indexDoc.load(brew.id).success(function(a,b,c,d,e) {
+      var newDoc = new indexDb.docClass(a);
+      newDoc.finished_date = finishedDate.getFullYear() + '-' + finishedDate.getMonth() + '-' + finishedDate.getDate() + ' ' + finishedDate.getHours() + ':' + finishedDate.getMinutes() + ':' + finishedDate.getSeconds();
+      newDoc.save().success(function(a,b,c) { 
+        debugger;
+      });
+    });
   };
   $scope.showActions = function(brew) {
-    return $scope.showStart(brew) || $scope.showFinish(brew);
-  };
-  $scope.showStart = function(brew) {
-    return true;
-  };
-  $scope.showFinish = function(brew) {
-    return true;
+    return (!(brew.finish_date) && !(brew.start_date));
   };
 });
 angular.bootstrap(document, ['demo']);

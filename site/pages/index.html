@@ -74,21 +74,30 @@
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu">
-                                        <li><a href="#" ng-click="finishBrew(brew)" ng-show="showFinish(brew)">Mark finished</a></li>
-                                        <li><a href="#" ng-click="startBrew(brew)" ng-show="showStart(brew)">Start</a></li>
+                                        <li><a href="#" ng-click="finishBrew(brew)" ng-hide="brew.finished_date">Mark finished</a></li>
+                                        <li><a href="#" ng-click="startBrew(brew)" ng-hide="brew.start_date">Start</a></li>
                                     </ul>
                                 </div>
                             </div>
                         </div>
                         <!-- /.panel-heading -->
                         <div class="panel-body">
-                          <div class="row" style="padding-bottom:10px;">
-                            <div class="start_row" ng-show="brew.start_date">
-                              <div class="col-sm-2 text-right"><strong>Started:</strong></div>
-                              <div class="col-sm-10 text-left">{{brew.start_date}}</div>
+                          <div style="padding-bottom:10px;">
+                            <div class="row">
+                              <div class="started_row" ng-show="brew.start_date">
+                                <div class="col-sm-2 text-right"><strong>Started:</strong></div>
+                                <div class="col-sm-10 text-left">{{brew.start_date}}</div>
+                              </div>
+                            </div>
+                            <div class="row">
+                              <div class="finished_row" ng-show="brew.start_date">
+                                <div class="col-sm-2 text-right"><strong>Finished:</strong></div>
+                                <div class="col-sm-10 text-left">{{brew.finished_date}}</div>
+                              </div>
                             </div>
                           </div>
-                          <div class="brew-chart"></div>
+                          <div class="brew-no-chart">No temp data</div>
+                          <div class="brew-chart" ng-show="brew.temps.length > 0"></div>
                           <div class="brew-table" ng-show="false">
                             <ul>
                               <li ng-repeat="temp in brew.temps">{{temp.date}} - {{temp.temp}}
