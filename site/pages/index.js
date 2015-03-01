@@ -19,9 +19,12 @@ var app = angular.module('demo', ['CornerCouch'])
   $scope.server = cornercouch();
   $scope.server.uri = "../db";
   $scope.brews = [];
+  $scope.newBrews = [];
   $scope.events = [];
   var indexDb = $scope.server.getDB('brewberry_index');
   var tempsDb = $scope.server.getDB('brewberry_temps');
+  var eventsDb = $scope.server.getDB('brewberry_events');
+  
   indexDb.query('index_db','all').success(function(data) { 
     var brews = _.map(data.rows, function(row) {
       return {
@@ -48,22 +51,41 @@ var app = angular.module('demo', ['CornerCouch'])
   $scope.startBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();
     indexDoc.load(brew.id).success(function(a) {
-      var newDoc = new indexDb.docClass(a);
-      newDoc.start_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
-      newDoc.save().success(function(a,b,c) { 
-        $scope.brews[index].start_date = newDoc.start_date;
+      var loadedDoc = new indexDb.docClass(a);
+      loadedDoc.start_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
+      loadedDoc.save().success(function() { 
+        $scope.brews[index].start_date = loadedDoc.start_date;
       });
     });
   };
   $scope.finishBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();
     indexDoc.load(brew.id).success(function(a) {
-      var newDoc = new indexDb.docClass(a);
-      newDoc.finished_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
-      newDoc.save().success(function(a,b,c) { 
-        $scope.brews[index].finished_date = newDoc.finished_date;
+      var loadedDoc = new indexDb.docClass(a);
+      loadedDoc.finished_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
+      loadedDoc.save().success(function() { 
+        $scope.brews[index].finished_date = loadedDoc.finished_date;
       });
     });
+  };
+  $scope.addNew = function() {
+    $scope.newBrews.push({channel:1});
+  };
+  $scope.saveNew = function(newBrew) {
+    // check for an existing brew with this id before blindly saving
+    var newDocId = _.snakeCase(_.deburr(newBrew.name));
+    var newDoc = indexDb.newDoc({_id: newDocId, name: newBrew.name, adc_channel: newBrew.channel });
+    newDoc.save().success(function() { 
+      $scope.newBrews = _.without($scope.newBrews, newBrew);
+    }).error(function(err) {
+      console.log('error saving document');
+      console.dir(newBrew);
+      console.dir(newDoc);
+      console.dir(err);
+    });
+  };
+  $scope.saveNewEnabled = function(newBrew) {
+    return !newBrew.name || !newBrew.channel;
   };
   $scope.showActions = function(brew) {
     return (!(brew.finished_date) || !(brew.start_date));

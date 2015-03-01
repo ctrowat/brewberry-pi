@@ -38,24 +38,18 @@
         <!-- Navigation -->
         <nav class="navbar navbar-default navbar-static-top" role="navigation" style="margin-bottom: 0">
             <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-                    <span class="sr-only">Toggle navigation</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-                <a class="navbar-brand" href="index.html">Brewberry {{ id }}</a>
+                <a class="navbar-brand" href="index.html">Brewberry pi</a>
             </div>
 
             <div class="navbar-default sidebar" role="navigation">
                 <div class="sidebar-nav navbar-collapse">
                     <ul class="nav" id="side-menu">
-                        <li>
-                            <a href="index.html"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
-                        </li>
-                        <!--<li ng-repeat="brew in brews">
-                          <a ng-click="showBrew(brew)"><i class="fa fa-beer fa-fw"></i> {{brew.name}}</a>
-                        </li>-->
+                      <li>
+                          <a href="#"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
+                      </li>
+                      <li>
+                        <a href="#" ng-click="addNew()"><i class="fa fa-plus fa-fw"></i> Add New</a>
+                      </li>
                     </ul>
                 </div>
             </div>
@@ -64,7 +58,39 @@
         <div id="page-wrapper">
             <div class="row" style="padding-top:20px">
                 <div class="col-lg-8">
-                    <div class="panel panel-default" ng-repeat="brew in brews" brew-repeat-directive>
+                  <div class="panel panel-info" ng-repeat="newBrew in newBrews">
+                      <div class="panel-heading">
+                          <i class="fa fa-beer fa-fw"></i> <input type="text" ng-model="newBrew.name">
+                      </div>
+                      <!-- /.panel-heading -->
+                      <div class="panel-body">
+                        <div style="padding-bottom:10px;">
+                          <div class="form-horizontal">
+                            <div class="form-group">
+                              <div class="col-sm-2 control-label"><strong>Channel:</strong></div>
+                              <div class="col-sm-2">
+                                <select class="form-control" ng-model="newBrew.channel">
+                                  <option default>1</option>
+                                  <option>2</option>
+                                  <option>3</option>
+                                  <option>4</option>
+                                  <option>5</option>
+                                  <option>6</option>
+                                  <option>7</option>
+                                  <option>8</option>
+                                </select>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="pull-right">
+                            <div class="btn-group">
+                              <button class="btn btn-success" ng-click="saveNew(newBrew)" ng-disabled="saveNewEnabled(newBrew)">Save</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                  </div>
+                  <div class="panel panel-default" ng-repeat="brew in brews" brew-repeat-directive>
                         <div class="panel-heading">
                             <i class="fa fa-beer fa-fw"></i> {{brew.name}}
                             <div class="pull-right" ng-show="showActions(brew)">
@@ -199,8 +225,8 @@
     <!-- jQuery -->
     <script src="../bower_components/jquery/dist/jquery.min.js"></script>
 
-    <!-- Underscore -->
-    <script src="../bower_components/underscore/underscore-min.js"></script>
+    <!-- Lodash -->
+    <script src="../bower_components/lodash/lodash.min.js"></script>
 
     <!-- AngularJS -->
     <script src="../bower_components/angularjs/angular.js"></script>
@@ -221,8 +247,8 @@
     <!-- Corner Couch -->
     <script src="../bower_components/CornerCouch/angular-cornercouch.js"></script>
   
-    <!-- UI Bootstrap -->
-    <script src="../bower_components/bootstrap-bower/js/bootstrap.min.js"></script>
+    <!-- ui bootstrap -->
+    <script src="ui-bootstrap-0.12.1.min.js"></script>
   
     <!-- our js -->
     <script src="index.js"></script>

@@ -24,6 +24,6 @@
     "startbootstrap-sb-admin-2": "~1.0.5",
     "CornerCouch": "*",
     "underscore": "~1.8.2",
-    "bootstrap-bower": "~3.0.0"
+    "lodash": "~3.3.1"
   }
 }

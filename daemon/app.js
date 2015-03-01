@@ -135,6 +135,7 @@ var createSampleCallback = function(pair) {
 
 var getActiveBrews = function() {
   couch.get(indexDbName,'_design/index_db/_view/all', null, function(err, res) {
+    if (err) { console.log(err); return; } // just skip this pass if the db returns an error
     var resultMap = [];
     var samplesToTake = {};
     _.each(res.data.rows, function(row) {
