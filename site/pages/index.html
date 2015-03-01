@@ -74,8 +74,8 @@
                                         <span class="caret"></span>
                                     </button>
                                     <ul class="dropdown-menu pull-right" role="menu">
-                                        <li><a href="#" ng-click="finishBrew(brew)" ng-hide="brew.finished_date">Mark finished</a></li>
-                                        <li><a href="#" ng-click="startBrew(brew)" ng-hide="brew.start_date">Start</a></li>
+                                        <li><a href="#" ng-click="finishBrew(brew, $index)" ng-hide="brew.finished_date || !brew.start_date">Mark finished</a></li>
+                                        <li><a href="#" ng-click="startBrew(brew, $index)" ng-hide="brew.start_date">Start</a></li>
                                     </ul>
                                 </div>
                             </div>
@@ -90,13 +90,13 @@
                               </div>
                             </div>
                             <div class="row">
-                              <div class="finished_row" ng-show="brew.start_date">
+                              <div class="finished_row" ng-show="brew.finished_date">
                                 <div class="col-sm-2 text-right"><strong>Finished:</strong></div>
                                 <div class="col-sm-10 text-left">{{brew.finished_date}}</div>
                               </div>
                             </div>
                           </div>
-                          <div class="brew-no-chart">No temp data</div>
+                          <div class="brew-no-chart" ng-show="brew.temps.length === 0">No temp data</div>
                           <div class="brew-chart" ng-show="brew.temps.length > 0"></div>
                           <div class="brew-table" ng-show="false">
                             <ul>
@@ -221,8 +221,13 @@
     <!-- Corner Couch -->
     <script src="../bower_components/CornerCouch/angular-cornercouch.js"></script>
   
+    <!-- UI Bootstrap -->
+    <script src="../bower_components/bootstrap-bower/js/bootstrap.min.js"></script>
+  
     <!-- our js -->
     <script src="index.js"></script>
+    <!-- and date.js -->
+    <script src="date.js"></script>
 
 </body>
 </html>

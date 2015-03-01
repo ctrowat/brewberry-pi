@@ -4,6 +4,7 @@ var couchPort = 5984;
 var _ = require('underscore');
 var async = require('async');
 var nodeCouchDb = require('node-couchdb');
+require('./date.js');
 var couch = new nodeCouchDb(couchHost, couchPort);
 var piLed = 0;
 var clockPin = 17;
@@ -11,14 +12,13 @@ var mosiPin = 18;
 var emptyIndexEntry = {};
 var emptyBrewEntry = { adChannel: -1};
 var indexDbName = 'brewberry_index';
-var tempDbName = 'brewberry_temps';
+var tempsDbName = 'brewberry_temps';
+var collectInterval = 500; // ms
+var saveInterval = 120; // * collectInterval
 
 var wpi, spi, spiLib;
-var debug = true;
-var mock = false;
-if (debug) {
-  console.log('debug on');
-}
+
+var mock = true;
 if (mock) {
   wpi = require('./mock-wiring-pi.js');
   spiLib = require('./mock-spi.js');
@@ -26,7 +26,7 @@ if (mock) {
   wpi = require('wiring-pi');
   spiLib = require('spi');
 }
-
+var storedTemps = {};
 var stop = false;
 var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
@@ -39,7 +39,7 @@ var outputLEDState = function(callback) {
       }
     }
   }
-  console.log('['+bitArray.join('')+']');
+  //console.log('['+bitArray.join('')+']');
   wpi.digitalWrite(clockPin, 1);
   wpi.digitalWrite(clockPin, 0);
   for ( var i = 0;i < bitArray.length;i++) {
@@ -60,16 +60,17 @@ var setupDb = function(callback) {
       if (db === indexDbName) {
         foundIndexDb = true;
       }
-      else if (db === tempDbName) {
+      else if (db === tempsDbName) {
         foundTempDb = true;
       }
     });
     if (!foundIndexDb) {
-      callback("Could not locate index DB!");
+      return callback("Could not locate index DB!");
     }
     if (!foundTempDb) {
-      callback("Could not locate temps DB!");
+      return callback("Could not locate temps DB!");
     }
+    callback(null);
   });    
 };
 
@@ -80,7 +81,6 @@ var setup = function(callback) {
   wpi.pinMode(clockPin, wpi.OUTPUT);
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
-  if (debug) { console.log('setup'); } 
   async.parallel(setupFunctions, function(err, results) {
       if (err) { 
         console.log('setup error: %s', err);
@@ -104,59 +104,88 @@ var sampleAdc = function(channel, callback) {
   });
 };
 
-var takeSample = function(channel, callback) {
-  if (channel >= 0 && channel <= 7) {
-    var samplesToTake = [];
-    // take 11 samples
-    for (var i = 0;i < 11; i++) {
-      samplesToTake.push(function(innerCallback) { sampleAdc(channel, innerCallback); });
-    }
-    async.series(samplesToTake, function(err, results) {
-      if (err) { console.log('error taking samples for channel %s: %s', channel, err); }
-      else {
-        var result = 0;
-        // throw away the first sample and average the rest
-        for (var i = 0;i<10;i++) {
-          result += results[i+1];
-        }
-        result = result / 10.0;
-        callback(null, result);
-      }
-    });
-  } else {
-    callback(null, -40);
+var takeSample = function(id, channel, callback) {
+  var samplesToTake = [];
+  // take 11 samples
+  for (var i = 0;i < 11; i++) {
+    samplesToTake.push(function(innerCallback) { sampleAdc(channel, innerCallback); });
   }
+  async.series(samplesToTake, function(err, results) {
+    if (err) { 
+      console.log('error taking samples for channel %s: %s', channel, err); 
+      callback(err);
+    }
+    else {
+      var result = 0;
+      // throw away the first sample and average the rest
+      for (var i = 0;i<10;i++) {
+        result += results[i+1];
+      }
+      result = result / 10.0;
+      callback(null, {id: id, channel: channel, result: result});
+    }
+  });
+};
+
+var createSampleCallback = function(pair) {
+  return function(innerCallback) {
+    takeSample(pair[0], pair[1], innerCallback);
+  };
 };
 
 var getActiveBrews = function() {
-  couch.get(indexDbName,'_design/all/_view/all', null, function(err, res) {
-    var samplesToTake = [];
+  couch.get(indexDbName,'_design/index_db/_view/all', null, function(err, res) {
     var resultMap = [];
+    var samplesToTake = {};
     _.each(res.data.rows, function(row) {
-      resultMap[samplesToTake.length] = row.value._id;
-      samplesToTake.push(function(callback) { takeSample(row.value.adc_channel, callback); });
+      if (row.value.start_date && !row.value.finished_date) { // check if the brew has started
+        if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
+          samplesToTake[row.value._id] = row.value.adc_channel;
+        } else {
+          console.log('brew %s has invalid channel %s', row.value._id, row.value.adc_channel);
+        }
+      }
     });
-    async.series(samplesToTake, function(err, results) {
-      _.each(results, function(result, index) {
-        console.log('%s temp: %s', resultMap[index], result);
+    var calls = _.map(_.pairs(samplesToTake), createSampleCallback);
+    async.series(calls , function(err, results) {
+      var newTemps = {};
+      _.each(results, function(result) {
+        if (_.isUndefined(storedTemps[result.id])) { storedTemps[result.id] = []; }
+        storedTemps[result.id].push(result.result);
       });
-      // log for 1 minute, then post the high/low/avg to the database
-      // insert the value into the temps db
-        var sampleTime = new Date();
-        /*console.log('adc channel %s returned temp %s at %s', channel, result, 
-          sampleTime.getFullYear() + '-' + sampleTime.getMonth() + '-' + sampleTime.getDate() + ' ' + sampleTime.getHours() + ':' + sampleTime.getMinutes() + ':' + sampleTime.getSeconds());*/
+      _.each(_.keys(storedTemps), function(key) {
+        if (!_.findKey(results, function(prop) { return prop.id === key; })) {
+          delete storedTemps[key];
+        } else {
+          if (storedTemps[key].length >= saveInterval) {
+            var sampleTime = new Date();
+            var dateString = sampleTime.toString('yyyy-MM-dd HH:mm:ss');
+            var averageTemp = Math.round(_.reduce(storedTemps[key], function(memo, num){ return memo + num; }, 0) / storedTemps[key].length * 100) / 100;
+            storedTemps[key] = [];
+            var saveData = {
+              brew_id: key,
+              date: dateString,
+              temp: averageTemp
+            };
+            couch.insert(tempsDbName, saveData, function(err, data) {
+              if (err) { console.log('error saving data for %s: %s',key, err); }
+            });
+          }
+        }
+      });
+      // update LED state as appropriate
       for (var i = 0;i < 3;i++) {
         ledState[piLed][i] = Math.floor(Math.random() * 256);
       }
-      outputLEDState();
     });
   });
 };
 
 var loop = function() {
   getActiveBrews();
+  outputLEDState();
   if (!stop) { 
-    setTimeout(loop, 500); 
+    setTimeout(loop, collectInterval); 
   }
 };
 

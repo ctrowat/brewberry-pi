@@ -9,6 +9,7 @@ var app = angular.module('demo', ['CornerCouch'])
       'data':scope.brew.temps,
       'xkey':'date',
       'ykeys':['temp'],
+      'hideHover':true,
       labels:['Temperature']
     });
   }
@@ -44,24 +45,28 @@ var app = angular.module('demo', ['CornerCouch'])
       $scope.brews = _.values(brewsIndex);  
     });
   });  
-  $scope.startBrew = function(brew) {
-    console.log('Mark this brew as started');
-    console.dir(brew);
-    // add a start date
-  };
-  $scope.finishBrew = function(brew) {
-    var finishedDate = new Date();
+  $scope.startBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();
-    indexDoc.load(brew.id).success(function(a,b,c,d,e) {
+    indexDoc.load(brew.id).success(function(a) {
       var newDoc = new indexDb.docClass(a);
-      newDoc.finished_date = finishedDate.getFullYear() + '-' + finishedDate.getMonth() + '-' + finishedDate.getDate() + ' ' + finishedDate.getHours() + ':' + finishedDate.getMinutes() + ':' + finishedDate.getSeconds();
+      newDoc.start_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
       newDoc.save().success(function(a,b,c) { 
-        debugger;
+        $scope.brews[index].start_date = newDoc.start_date;
+      });
+    });
+  };
+  $scope.finishBrew = function(brew, index) {
+    var indexDoc = indexDb.getDoc();
+    indexDoc.load(brew.id).success(function(a) {
+      var newDoc = new indexDb.docClass(a);
+      newDoc.finished_date = (new Date()).toString('yyyy-MM-dd HH:mm:ss');
+      newDoc.save().success(function(a,b,c) { 
+        $scope.brews[index].finished_date = newDoc.finished_date;
       });
     });
   };
   $scope.showActions = function(brew) {
-    return (!(brew.finish_date) && !(brew.start_date));
+    return (!(brew.finished_date) || !(brew.start_date));
   };
 });
 angular.bootstrap(document, ['demo']);
