@@ -69,7 +69,7 @@ var app = angular.module('demo', ['CornerCouch'])
     });
   };
   $scope.addNew = function() {
-    $scope.newBrews.push({channel:1});
+    $scope.newBrews.push({channel:0});
   };
   $scope.saveNew = function(newBrew) {
     // check for an existing brew with this id before blindly saving
@@ -85,7 +85,7 @@ var app = angular.module('demo', ['CornerCouch'])
     });
   };
   $scope.saveNewEnabled = function(newBrew) {
-    return !newBrew.name || !newBrew.channel;
+    return !newBrew.name || (newBrew.channel < 0) || (newBrew.channel > 7);
   };
   $scope.showActions = function(brew) {
     return (!(brew.finished_date) || !(brew.start_date));

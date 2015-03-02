@@ -8,7 +8,8 @@
     "node-couchdb": "^0.3.1",
     "underscore": "^1.8.2",
     "wiring-pi": "^2.0.0",
-    "spi": "*"
+    "spi": "*",
+    "minimist": "*"
   },
   "devDependencies": {},
   "scripts": {

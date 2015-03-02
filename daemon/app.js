@@ -18,7 +18,7 @@ var saveInterval = 120; // * collectInterval
 
 var wpi, spi, spiLib;
 
-var mock = true;
+var mock = false;
 if (mock) {
   wpi = require('./mock-wiring-pi.js');
   spiLib = require('./mock-spi.js');
