@@ -40,6 +40,9 @@ var eventsView = {
     }
   }
 };
+// let's add some creative views to the events table
+// we need to know what the last event was for a brew so we can know if we just went out of range or back in
+// and we need a list all chronologically for the events list on the page
 
 var indexDbName = 'brewberry_index';
 var tempsDbName = 'brewberry_temps';

@@ -56,7 +56,8 @@
         </nav>
 
         <div id="page-wrapper">
-            <div class="row" style="padding-top:20px">
+            <div class="row" ng-show="loading">Loading...</div>
+            <div class="row" style="padding-top:20px" ng-hide="loading">
                 <div class="col-lg-8">
                   <div class="panel panel-info" ng-repeat="newBrew in newBrews">
                       <div class="panel-heading">
@@ -122,6 +123,7 @@
                               </div>
                             </div>
                           </div>
+                          <div class="brew-loading" ng-show="brew.loading">Loading...</div>
                           <div class="brew-no-chart" ng-show="brew.temps.length === 0">No temp data</div>
                           <div class="brew-chart" ng-show="brew.temps.length > 0"></div>
                           <div class="brew-table" ng-show="false">
@@ -240,6 +242,9 @@
     <!-- Morris Charts JavaScript -->
     <script src="../bower_components/raphael/raphael-min.js"></script>
     <script src="../bower_components/morrisjs/morris.min.js"></script>
+  
+    <!-- Highcharts -->
+    <script src="../bower_components/highcharts-release/highcharts.js"></script>
 
     <!-- Custom Theme JavaScript -->
     <script src="../bower_components/startbootstrap-sb-admin-2/dist/js/sb-admin-2.js"></script>

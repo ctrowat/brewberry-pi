@@ -2,15 +2,31 @@
 var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
-    // we should be able to make a chart with this!
-    // we could probably also hook up a callback to refresh the chart every minute or so
-    new Morris.Line({
-      'element':element.find('.brew-chart')[0],
-      'data':scope.brew.temps,
-      'xkey':'date',
-      'ykeys':['temp'],
-      'hideHover':true,
-      labels:['Temperature']
+    scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
+      scope.brew.temps = _.map(data.rows, function(row) {
+        return {
+          date: row.value.date,
+          temp: row.value.temp
+        };
+      });
+      setTimeout(function() {
+        // we should be able to make a chart with this!
+        // we could probably also hook up a callback to refresh the chart every minute or so
+        scope.chart = new Morris.Line({
+          'element':element.find('.brew-chart')[0],
+          'data':scope.brew.temps,
+          'xkey':'date',
+          'ykeys':['temp'],
+          'hideHover':true,
+          labels:['Temperature']
+        });
+      }, 100);
+      scope.brew.loading = false;
+      /*var chart = new Highcharts.Chart({
+        chart: { renderTo: element.find('.brew-chart')[0] },
+        xAxis: { type: 'datetime' },
+        series: [{ data: scope.brew.temps }]
+      });*/
     });
   }
 })
@@ -21,32 +37,26 @@ var app = angular.module('demo', ['CornerCouch'])
   $scope.brews = [];
   $scope.newBrews = [];
   $scope.events = [];
+  $scope.loading = true;
   var indexDb = $scope.server.getDB('brewberry_index');
   var tempsDb = $scope.server.getDB('brewberry_temps');
   var eventsDb = $scope.server.getDB('brewberry_events');
   
   indexDb.query('index_db','all').success(function(data) { 
+      $scope.loading = false;
     var brews = _.map(data.rows, function(row) {
       return {
         name: row.value.name ? row.value.name : 'NO NAME (' + row.id +')',
         id: row.id,
         start_date: row.value.start_date,
         finished_date: row.value.finished_date,
-        temps: []
+        comments: row.value.comments,
+        temps: [],
+        loading: true
       };
     });
-    tempsDb.query('temps_db','by_brew_id').success(function(data) {
-      var brewsIndex = _.indexBy(brews, function(brew) { return brew.id; });
-      _.each(data.rows, function(row) {
-        if (!_.isUndefined(brewsIndex[row.key])) { 
-          brewsIndex[row.key].temps.push({
-            date: row.value.date,
-            temp: row.value.temp
-          }); 
-        }
-      });
-      $scope.brews = _.values(brewsIndex);  
-    });
+    var brewsIndex = _.indexBy(brews, function(brew) { return brew.id; });
+    $scope.brews = _.values(brewsIndex);  
   });  
   $scope.startBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();

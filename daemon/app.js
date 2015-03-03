@@ -4,6 +4,7 @@ var couchPort = 5984;
 var _ = require('underscore');
 var async = require('async');
 var nodeCouchDb = require('node-couchdb');
+var argv = require('minimist')(process.argv.slice(2));
 require('./date.js');
 var couch = new nodeCouchDb(couchHost, couchPort);
 var piLed = 0;
@@ -13,15 +14,18 @@ var emptyIndexEntry = {};
 var emptyBrewEntry = { adChannel: -1};
 var indexDbName = 'brewberry_index';
 var tempsDbName = 'brewberry_temps';
-var collectInterval = 500; // ms
-var saveInterval = 120; // * collectInterval
+var eventsDbName = 'brewberry_events';
+var collectInterval = 1000; // ms
+var ledInterval = 100; // ms
+var saveInterval = 300; // * collectInterval
 
 var wpi, spi, spiLib;
 
-var mock = false;
+var mock = _.contains(argv._, 'mock');
 if (mock) {
   wpi = require('./mock-wiring-pi.js');
   spiLib = require('./mock-spi.js');
+  console.log('mocking inputs');
 } else {
   wpi = require('wiring-pi');
   spiLib = require('spi');
@@ -30,7 +34,7 @@ var storedTemps = {};
 var stop = false;
 var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
-var outputLEDState = function(callback) {
+var outputLEDState = function() {
   var bitArray = new Array(144);
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 3;j++) {
@@ -39,7 +43,6 @@ var outputLEDState = function(callback) {
       }
     }
   }
-  //console.log('['+bitArray.join('')+']');
   wpi.digitalWrite(clockPin, 1);
   wpi.digitalWrite(clockPin, 0);
   for ( var i = 0;i < bitArray.length;i++) {
@@ -49,6 +52,9 @@ var outputLEDState = function(callback) {
   }
   wpi.delay(2); // 5ms should be plenty to make sure we're over 500mS with the clock low
   wpi.digitalWrite(clockPin, 1);
+  if (!stop) { 
+    setTimeout(outputLEDState, ledInterval);
+  }
 };
 
 var setupDb = function(callback) {  
@@ -56,6 +62,7 @@ var setupDb = function(callback) {
     if (err) { return callback(err); }
     var foundIndexDb = false;
     var foundTempDb = false;
+    var foundEventsDb = false;
     _.each(databases, function(db) {
       if (db === indexDbName) {
         foundIndexDb = true;
@@ -63,12 +70,18 @@ var setupDb = function(callback) {
       else if (db === tempsDbName) {
         foundTempDb = true;
       }
+      else if (db === eventsDbName) {
+        foundEventsDb = true;
+      }
     });
     if (!foundIndexDb) {
       return callback("Could not locate index DB!");
     }
     if (!foundTempDb) {
       return callback("Could not locate temps DB!");
+    }
+    if (!foundEventsDb) {
+      return callback('Count not locate events DB!');
     }
     callback(null);
   });    
@@ -82,11 +95,12 @@ var setup = function(callback) {
   wpi.pinMode(mosiPin, wpi.OUTPUT);
   setupFunctions.push(setupDb);
   async.parallel(setupFunctions, function(err, results) {
-      if (err) { 
-        console.log('setup error: %s', err);
-        process.exit(-1);
-      }
-    callback();
+    if (err) { 
+      console.log('setup error: %s', err);
+      process.exit(-1);
+    }
+    getActiveBrews();
+    outputLEDState();
   });
 };
 
@@ -168,6 +182,9 @@ var getActiveBrews = function() {
               date: dateString,
               temp: averageTemp
             };
+            // if over/under temp log to the events table
+            // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
+            // email when we go out of range, and maybe when we go back in
             couch.insert(tempsDbName, saveData, function(err, data) {
               if (err) { console.log('error saving data for %s: %s',key, err); }
             });
@@ -178,16 +195,11 @@ var getActiveBrews = function() {
       for (var i = 0;i < 3;i++) {
         ledState[piLed][i] = Math.floor(Math.random() * 256);
       }
+      if (!stop) { 
+        setTimeout(getActiveBrews, collectInterval); 
+      }      
     });
   });
 };
 
-var loop = function() {
-  getActiveBrews();
-  outputLEDState();
-  if (!stop) { 
-    setTimeout(loop, collectInterval); 
-  }
-};
-
-setup(loop);
+setup();
