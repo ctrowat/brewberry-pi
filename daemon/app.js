@@ -16,7 +16,7 @@ var indexDbName = 'brewberry_index';
 var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
 var collectInterval = 1000; // ms
-var ledInterval = 100; // ms
+var ledInterval = 50; // ms
 var saveInterval = 300; // * collectInterval
 
 var wpi, spi, spiLib;
@@ -32,6 +32,7 @@ if (mock) {
 }
 var storedTemps = {};
 var stop = false;
+var statusLedHue = 0.0;
 var ledState = [[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0],[0,0,0]];
 
 var HSVToRGB = function (h, s, v) {
@@ -60,6 +61,12 @@ var HSVToRGB = function (h, s, v) {
 };
 
 var outputLEDState = function() {
+  var rgb = HSVToRGB(statusLedHue,1,0.05);
+  ledState[piLed][0] = rgb.r;
+  ledState[piLed][1] = rgb.g;
+  ledState[piLed][2] = rgb.b;
+  statusLedHue += 0.02;
+  if (statusLedHue > 1) { statusLedHue = 0; }
   var bitArray = new Array(144);
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 3;j++) {
@@ -216,12 +223,6 @@ var getActiveBrews = function() {
           }
         }
       });
-      // update LED state as appropriate
-      var rgb = HSVToRGB(Math.random(),1,0.05);
-      ledState[piLed][0] = rgb.r;
-      ledState[piLed][1] = rgb.g;
-      ledState[piLed][2] = rgb.b;
-
       if (!stop) { 
         setTimeout(getActiveBrews, collectInterval); 
       }      
