@@ -12,21 +12,21 @@ var app = angular.module('demo', ['CornerCouch'])
       setTimeout(function() {
         // we should be able to make a chart with this!
         // we could probably also hook up a callback to refresh the chart every minute or so
-        scope.chart = new Morris.Line({
+        /*scope.chart = new Morris.Line({
           'element':element.find('.brew-chart')[0],
           'data':scope.brew.temps,
           'xkey':'date',
           'ykeys':['temp'],
           'hideHover':true,
           labels:['Temperature']
+        });*/
+        var chart = new Highcharts.Chart({
+          chart: { renderTo: element.find('.brew-chart')[0] },
+          xAxis: { type: 'datetime' },
+          series: [{ data: scope.brew.temps }]
         });
       }, 100);
       scope.brew.loading = false;
-      /*var chart = new Highcharts.Chart({
-        chart: { renderTo: element.find('.brew-chart')[0] },
-        xAxis: { type: 'datetime' },
-        series: [{ data: scope.brew.temps }]
-      });*/
     });
   }
 })
