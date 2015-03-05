@@ -35,8 +35,8 @@ var eventsView = {
     'all': {
       'map': 'function(doc) { emit(doc._id, doc); }'
     },
-    'by_date': {
-      'map': 'function(doc) { emit(doc.date, doc); }'
+    'by_brewid': {
+      'map': 'function(doc) { emit(doc.brew_id, doc); }'
     }
   }
 };

@@ -17,7 +17,7 @@ var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
 var collectInterval = 5000; // ms
 var ledInterval = 250; // ms
-var saveInterval = 60; // * collectInterval
+var saveInterval = 1; // * collectInterval
 
 var wpi, spi, spiLib;
 
@@ -65,7 +65,7 @@ var outputLEDState = function() {
   ledState[piLed][0] = rgb.r;
   ledState[piLed][1] = rgb.g;
   ledState[piLed][2] = rgb.b;
-  statusLedHue += 0.05;
+  statusLedHue += 0.025;
   if (statusLedHue > 1) { statusLedHue  -= 1; }
   var bitArray = new Array(144);
   for (var i = 0;i < 6;i++) {
@@ -224,9 +224,9 @@ var getActiveBrews = function() {
             if (saveData.temp < storedTemps[key].minTemp) { console.log('under temp on %s',key); }
             var tempEventObject = {brew_id: key, event_type: 'OKAY'};
             // query events table for this key - do we already know?
-            couch.get(eventsDbName, '_design/events/_view/by_date', {key: key}, function(err, res) {
+            couch.get(eventsDbName, '_design/events_db/_view/by_brewid', {key: key}, function(err, res) {
               if (!err) {
-                console.dir(res);
+                console.dir(res.data.rows);
                 // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
                 // email when we go out of range, and maybe when we go back in
                 // if over/under temp log to the events table
