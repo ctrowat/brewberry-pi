@@ -40,22 +40,12 @@
             <div class="navbar-header">
                 <a class="navbar-brand" href="index.html">Brewberry pi</a>
             </div>
-
-            <div class="navbar-default sidebar" role="navigation">
-                <div class="sidebar-nav navbar-collapse">
-                    <ul class="nav" id="side-menu">
-                      <li>
-                          <a href="#"><i class="fa fa-dashboard fa-fw"></i> Dashboard</a>
-                      </li>
-                      <li>
-                        <a href="#" ng-click="addNew()"><i class="fa fa-plus fa-fw"></i> Add New</a>
-                      </li>
-                    </ul>
-                </div>
+            <div class="pull-right" style="padding-top:5px;padding-right:5px">
+              <button class="btn btn-success" ng-click="addNew()"><i class="fa fa-plus fa-fw"></i> Add New</button>
             </div>
         </nav>
 
-        <div id="page-wrapper">
+        <div style="padding-right:30px;padding-left:30px">
             <div class="row" ng-show="loading">Loading...</div>
             <div class="row" style="padding-top:20px" ng-hide="loading">
                 <div class="col-lg-8">
@@ -83,9 +73,19 @@
                               </div>
                             </div>
                           </div>
+                          <form class="form-inline">
+                            <div class="form-group" ng-class="{ 'has-error': !isNumber(newBrew.minTemp) }">
+                              <label for="minTempInput">Min Temp</label>
+                              <input type="number" class="form-control" id="minTempInput" ng-model="newBrew.minTemp">
+                            </div>
+                            <div class="form-group" ng-class="{ 'has-error': !isNumber(newBrew.maxTemp) }">
+                              <label for="maxTempInput">Max Temp</label>
+                              <input type="number" class="form-control" id="maxTempInput" ng-model="newBrew.maxTemp">
+                            </div>
+                          </form>
                           <div class="pull-right">
                             <div class="btn-group">
-                              <button class="btn btn-success" ng-click="saveNew(newBrew)" ng-disabled="saveNewEnabled(newBrew)">Save</button>
+                              <button class="btn btn-success" ng-click="saveNew(newBrew)" ng-disabled="!saveNewEnabled(newBrew)">Save</button>
                             </div>
                           </div>
                         </div>
@@ -113,13 +113,11 @@
                             <div class="row">
                               <div class="started_row" ng-show="brew.start_date">
                                 <div class="col-sm-2 text-right"><strong>Started:</strong></div>
-                                <div class="col-sm-10 text-left">{{brew.start_date}}</div>
+                                <div class="col-sm-4 text-left">{{brew.start_date}}</div>
                               </div>
-                            </div>
-                            <div class="row">
                               <div class="finished_row" ng-show="brew.finished_date">
                                 <div class="col-sm-2 text-right"><strong>Finished:</strong></div>
-                                <div class="col-sm-10 text-left">{{brew.finished_date}}</div>
+                                <div class="col-sm-4 text-left">{{brew.finished_date}}</div>
                               </div>
                             </div>
                           </div>
@@ -163,51 +161,7 @@
                               Nothing to see here!
                             </div>
                             <div class="list-group" ng-show="events.length > 0">
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-comment fa-fw"></i> New Comment
-                                    <span class="pull-right text-muted small"><em>4 minutes ago</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-twitter fa-fw"></i> 3 New Followers
-                                    <span class="pull-right text-muted small"><em>12 minutes ago</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-envelope fa-fw"></i> Message Sent
-                                    <span class="pull-right text-muted small"><em>27 minutes ago</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-tasks fa-fw"></i> New Task
-                                    <span class="pull-right text-muted small"><em>43 minutes ago</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-upload fa-fw"></i> Server Rebooted
-                                    <span class="pull-right text-muted small"><em>11:32 AM</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-bolt fa-fw"></i> Server Crashed!
-                                    <span class="pull-right text-muted small"><em>11:13 AM</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-warning fa-fw"></i> Server Not Responding
-                                    <span class="pull-right text-muted small"><em>10:57 AM</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-shopping-cart fa-fw"></i> New Order Placed
-                                    <span class="pull-right text-muted small"><em>9:49 AM</em>
-                                    </span>
-                                </a>
-                                <a href="#" class="list-group-item">
-                                    <i class="fa fa-money fa-fw"></i> Payment Received
-                                    <span class="pull-right text-muted small"><em>Yesterday</em>
-                                    </span>
-                                </a>
+                              <span class="label" ng-repeat="event in events">{{event.name}} - {{event.time}}</span>
                             </div>
                             <!-- /.list-group -->
                             <a href="#" class="btn btn-default btn-block">View All Alerts</a>

@@ -9,7 +9,8 @@
     "underscore": "^1.8.2",
     "wiring-pi": "^2.0.0",
     "spi": "*",
-    "minimist": "*"
+    "minimist": "*",
+    "sendgrid": "*"
   },
   "devDependencies": {},
   "scripts": {
