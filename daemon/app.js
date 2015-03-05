@@ -15,9 +15,9 @@ var emptyBrewEntry = { adChannel: -1};
 var indexDbName = 'brewberry_index';
 var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
-var collectInterval = 1000; // ms
-var ledInterval = 50; // ms
-var saveInterval = 300; // * collectInterval
+var collectInterval = 5000; // ms
+var ledInterval = 250; // ms
+var saveInterval = 60; // * collectInterval
 
 var wpi, spi, spiLib;
 
@@ -61,17 +61,17 @@ var HSVToRGB = function (h, s, v) {
 };
 
 var outputLEDState = function() {
-  var rgb = HSVToRGB(statusLedHue,1,0.05);
+  var rgb = HSVToRGB(statusLedHue,1,0.2);
   ledState[piLed][0] = rgb.r;
   ledState[piLed][1] = rgb.g;
   ledState[piLed][2] = rgb.b;
-  statusLedHue += 0.02;
-  if (statusLedHue > 1) { statusLedHue = 0; }
+  statusLedHue += 0.05;
+  if (statusLedHue > 1) { statusLedHue  -= 1; }
   var bitArray = new Array(144);
   for (var i = 0;i < 6;i++) {
     for (var j = 0;j < 3;j++) {
       for (var k = 0;k < 8;k++) {
-        bitArray[i*24+j*8+k] = (ledState[i][j] >> k) & 1;
+        bitArray[i*24+j*8+k] = (ledState[i][j] << k) & 0x80 ? 1 : 0;
       }
     }
   }
