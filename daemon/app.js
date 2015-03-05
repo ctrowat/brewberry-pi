@@ -222,11 +222,20 @@ var getActiveBrews = function() {
             };
             if (saveData.temp > storedTemps[key].maxTemp) { console.log('over temp on %s',key); }
             if (saveData.temp < storedTemps[key].minTemp) { console.log('under temp on %s',key); }
-            // if over/under temp log to the events table
-            // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
-            // email when we go out of range, and maybe when we go back in
-            couch.insert(tempsDbName, saveData, function(err, data) {
-              if (err) { console.log('error saving data for %s: %s',key, err); }
+            var tempEventObject = {brew_id: key, event_type: 'OKAY'};
+            // query events table for this key - do we already know?
+            couch.get(eventsDbName, '_design/events/_view/by_date', {key: key}, function(err, res) {
+              if (!err) {
+                console.dir(res);
+                // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
+                // email when we go out of range, and maybe when we go back in
+                // if over/under temp log to the events table
+              } else {
+                console.dir(err);
+              }
+              couch.insert(tempsDbName, saveData, function(err, data) {
+                if (err) { console.log('error saving data for %s: %s',key, err); }
+              });
             });
           }
         }
