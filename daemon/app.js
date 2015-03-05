@@ -150,15 +150,15 @@ var sampleAdc = function(channel, callback) {
   });
 };
 
-var takeSample = function(id, channel, callback) {
+var takeSample = function(id, config, callback) {
   var samplesToTake = [];
   // take 11 samples
   for (var i = 0;i < 11; i++) {
-    samplesToTake.push(function(innerCallback) { sampleAdc(channel, innerCallback); });
+    samplesToTake.push(function(innerCallback) { sampleAdc(config.adc_channel, innerCallback); });
   }
   async.series(samplesToTake, function(err, results) {
     if (err) { 
-      console.log('error taking samples for channel %s: %s', channel, err); 
+      console.log('error taking samples for channel %s: %s', config.adc_channel, err); 
       callback(err);
     }
     else {
@@ -168,7 +168,7 @@ var takeSample = function(id, channel, callback) {
         result += results[i+1];
       }
       result = result / 10.0;
-      callback(null, {id: id, channel: channel, result: result});
+      callback(null, {id: id, config: config, result: result});
     }
   });
 };
@@ -187,7 +187,11 @@ var getActiveBrews = function() {
     _.each(res.data.rows, function(row) {
       if (row.value.start_date && !row.value.finished_date) { // check if the brew has started
         if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
-          samplesToTake[row.value._id] = row.value.adc_channel;
+          samplesToTake[row.value._id] = {
+            adc_channel: row.value.adc_channel,
+            maxTemp: row.value.maxTemp,
+            minTemp: row.value.minTemp
+          };
         } else {
           console.log('brew %s has invalid channel %s', row.value._id, row.value.adc_channel);
         }
@@ -197,23 +201,27 @@ var getActiveBrews = function() {
     async.series(calls , function(err, results) {
       var newTemps = {};
       _.each(results, function(result) {
-        if (_.isUndefined(storedTemps[result.id])) { storedTemps[result.id] = []; }
-        storedTemps[result.id].push(result.result);
+        if (_.isUndefined(storedTemps[result.id])) { storedTemps[result.id] = {temps:[]}; }
+        storedTemps[result.id].temps.push(result.result);
+        storedTemps[result.id].minTemp = result.config.minTemp;
+        storedTemps[result.id].maxTemp = result.config.maxTemp;
       });
       _.each(_.keys(storedTemps), function(key) {
         if (!_.findKey(results, function(prop) { return prop.id === key; })) {
           delete storedTemps[key];
         } else {
-          if (storedTemps[key].length >= saveInterval) {
+          if (storedTemps[key].temps.length >= saveInterval) {
             var sampleTime = new Date();
             var dateString = sampleTime.toString('yyyy-MM-dd HH:mm:ss');
-            var averageTemp = Math.round(_.reduce(storedTemps[key], function(memo, num){ return memo + num; }, 0) / storedTemps[key].length * 100) / 100;
-            storedTemps[key] = [];
+            var averageTemp = Math.round(_.reduce(storedTemps[key].temps, function(memo, num){ return memo + num; }, 0) / storedTemps[key].temps.length * 100) / 100;
+            storedTemps[key].temps = [];
             var saveData = {
               brew_id: key,
               date: dateString,
               temp: averageTemp
             };
+            if (saveData.temp > storedTemps[key].maxTemp) { console.log('over temp on %s',key); }
+            if (saveData.temp < storedTemps[key].minTemp) { console.log('under temp on %s',key); }
             // if over/under temp log to the events table
             // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
             // email when we go out of range, and maybe when we go back in

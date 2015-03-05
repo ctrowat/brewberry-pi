@@ -18,6 +18,7 @@ var app = angular.module('demo', ['CornerCouch'])
           'xkey':'date',
           'ykeys':['temp'],
           'hideHover':true,
+          'pointStrokeColors':'#000000',
           labels:['Temperature']
         });
       }, 100);
@@ -33,25 +34,28 @@ var app = angular.module('demo', ['CornerCouch'])
   $scope.newBrews = [];
   $scope.events = [];
   $scope.loading = true;
+  $scope.isNumber = function(value) { 
+    return !_.isNaN(parseInt(value,10)); 
+  };
   var indexDb = $scope.server.getDB('brewberry_index');
   var tempsDb = $scope.server.getDB('brewberry_temps');
   var eventsDb = $scope.server.getDB('brewberry_events');
   
+  var transformBrew = function(row, id) {
+    return {
+      name: row.name ? row.name : 'NO NAME (' + id + ')',
+      id: id,
+      start_date: row.start_date,
+      finish_date: row.finish_date,
+      comments: row.comments,
+      temps: [],
+      loading: true
+    };
+  };
+  
   indexDb.query('index_db','all').success(function(data) { 
-      $scope.loading = false;
-    var brews = _.map(data.rows, function(row) {
-      return {
-        name: row.value.name ? row.value.name : 'NO NAME (' + row.id +')',
-        id: row.id,
-        start_date: row.value.start_date,
-        finished_date: row.value.finished_date,
-        comments: row.value.comments,
-        temps: [],
-        loading: true
-      };
-    });
-    var brewsIndex = _.indexBy(brews, function(brew) { return brew.id; });
-    $scope.brews = _.values(brewsIndex);  
+    $scope.brews = _.map(data.rows, function(row) { return transformBrew(row.value, row.id); });
+    $scope.loading = false;
   });  
   $scope.startBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();
@@ -74,14 +78,21 @@ var app = angular.module('demo', ['CornerCouch'])
     });
   };
   $scope.addNew = function() {
-    $scope.newBrews.push({channel:0});
+    $scope.newBrews.push({channel:0, minTemp: 22, maxTemp: 24});
   };
   $scope.saveNew = function(newBrew) {
     // check for an existing brew with this id before blindly saving
-    var newDocId = _.snakeCase(_.deburr(newBrew.name));
-    var newDoc = indexDb.newDoc({_id: newDocId, name: newBrew.name, adc_channel: newBrew.channel });
+    var newDoc = indexDb.newDoc({
+      _id: _.snakeCase(_.deburr(newBrew.name)), 
+      name: newBrew.name, 
+      adc_channel: newBrew.channel,
+      minTemp: parseInt(newBrew.minTemp, 10),
+      maxTemp: parseInt(newBrew.maxTemp, 10)
+    });
     newDoc.save().success(function() { 
       $scope.newBrews = _.without($scope.newBrews, newBrew);
+      debugger;
+      $scope.brews.push(transformBrew(newDoc, newDoc._id));
     }).error(function(err) {
       console.log('error saving document');
       console.dir(newBrew);
@@ -90,7 +101,12 @@ var app = angular.module('demo', ['CornerCouch'])
     });
   };
   $scope.saveNewEnabled = function(newBrew) {
-    return !newBrew.name || (newBrew.channel < 0) || (newBrew.channel > 7);
+    if (!newBrew.name) { return false; }
+    if (newBrew.channel < 0) { return false; }
+    if (newBrew.channel > 7) { return false; }
+    if (!$scope.isNumber(newBrew.minTemp)) { return false; }
+    if (!$scope.isNumber(newBrew.maxTemp)) { return false; }
+    return true;
   };
   $scope.showActions = function(brew) {
     return (!(brew.finished_date) || !(brew.start_date));
