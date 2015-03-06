@@ -220,22 +220,39 @@ var getActiveBrews = function() {
               date: dateString,
               temp: averageTemp
             };
-            if (saveData.temp > storedTemps[key].maxTemp) { console.log('over temp on %s',key); }
-            if (saveData.temp < storedTemps[key].minTemp) { console.log('under temp on %s',key); }
-            var tempEventObject = {brew_id: key, event_type: 'OKAY'};
-            // query events table for this key - do we already know?
+            couch.insert(tempsDbName, saveData, function(err, data) {
+              if (err) { console.log('error saving data for %s: %s',key, err); }
+            });
+            var event_type = 'OKAY';
+            if (!_.isUndefined(storedTemps[key].maxTemp) && saveData.temp > storedTemps[key].maxTemp) { event_type='OVER'; }
+            if (!_.isUndefined(storedTemps[key].minTemp) && saveData.temp < storedTemps[key].minTemp) { event_type='UNDER'; }
+            var tempEventObject = {brew_id: key, event_type: event_type, event_date: (new Date()).toString('yyyy-MM-dd HH:mm:ss')};
             couch.get(eventsDbName, '_design/events_db/_view/by_brewid', {key: key}, function(err, res) {
               if (!err) {
-                console.dir(res.data.rows);
-                // before saving check if we've logged an error recently, we shouldn't log more often than every 10-15 minutes
-                // email when we go out of range, and maybe when we go back in
-                // if over/under temp log to the events table
+                var insertRecord = false;
+                var sendEmail = false;
+                if (res.data.rows.length === 0) {
+                  insertRecord = true;
+                } else {
+                  var sortedRows = _.sortBy(res.data.rows, function(row) { return row.value.event_date; });
+                  if (_.last(sortedRows).value.event_type !== event_type) {
+                    insertRecord = true;
+                    sendEmail = true;
+                  }
+                  // if we have been over or under temp for a while, maybe nag again?
+                }
+                if (insertRecord) {
+                  // notify?
+                  couch.insert(eventsDbName, tempEventObject, function(err, data) {
+                    if (err) { console.log('error saving event data for %s: %s', key, err) }
+                  });
+                }
+                if (sendEmail) {
+                  console.log('notify user that %s is %s at %s', key, event_type, (new Date()).toString('yyyy-MM-dd HH:mm:ss'));
+                }
               } else {
-                console.dir(err);
+                console.log('Error retreiving events data for %s: %s',key,err);
               }
-              couch.insert(tempsDbName, saveData, function(err, data) {
-                if (err) { console.log('error saving data for %s: %s',key, err); }
-              });
             });
           }
         }
