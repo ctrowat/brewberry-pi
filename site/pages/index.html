@@ -110,6 +110,11 @@
                         <!-- /.panel-heading -->
                         <div class="panel-body">
                           <div style="padding-bottom:10px;">
+                            <div ng-show="!brew.start_date">
+                              <div class="alert alert-danger">
+                                This brew has not yet been started!
+                              </div>
+                            </div>
                             <div class="row">
                               <div class="started_row" ng-show="brew.start_date">
                                 <div class="col-sm-2 text-right"><strong>Started:</strong></div>

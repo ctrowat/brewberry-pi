@@ -6,20 +6,24 @@ var app = angular.module('demo', ['CornerCouch'])
           scope.brew.temps = _.sortBy(_.map(data.rows, function(row) {
             return {
               date: row.value.date,
-              temp: row.value.temp
+              temp: row.value.temp,
+              min_temp: row.value.min_temp,
+              max_temp: row.value.max_temp
             };
           }), function(row) { return row.date; });
           setTimeout(function() {
             // we should be able to make a chart with this!
             // we could probably also hook up a callback to refresh the chart every minute or so
-            scope.chart = new Morris.Area({
+            scope.chart = new Morris.Line({
               'element':element.find('.brew-chart')[0],
               'data':scope.brew.temps,
               'xkey':'date',
               'ykeys':['temp', 'min_temp', 'max_temp'],
               'hideHover':true,
-              'pointStrokeColors':'#000000',
-              labels:['Temperature'],
+              'lineColors':['#4da74d','#0b62a4','#cb4b4b'],
+              'pointFillColors':['#4da74d','#0b62a4','#cb4b4b'],
+              'pointStrokeColors':['#4da74d','#0b62a4','#cb4b4b'],
+              labels:['Temperature', 'Min', 'Max'],
               'behaveLikeLine':true
             });
           }, 100);
