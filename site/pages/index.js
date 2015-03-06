@@ -2,27 +2,39 @@
 var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
-    scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
-      scope.brew.temps = _.map(data.rows, function(row) {
-        return {
-          date: row.value.date,
-          temp: row.value.temp
-        };
-      });
-      setTimeout(function() {
-        // we should be able to make a chart with this!
-        // we could probably also hook up a callback to refresh the chart every minute or so
-        scope.chart = new Morris.Line({
-          'element':element.find('.brew-chart')[0],
-          'data':scope.brew.temps,
-          'xkey':'date',
-          'ykeys':['temp'],
-          'hideHover':true,
-          'pointStrokeColors':'#000000',
-          labels:['Temperature']
+    scope.$parent.server.getDB('brewberry_index').query('index_db','all', {key:scope.brew.id}).success(function(indexData) {
+      if (data.rows.length === 1) {
+        var minTemp = data.rows[0].min_temp;
+        var maxTemp = data.rows[0].max_temp;
+        scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
+          scope.brew.temps = _.sortBy(_.map(data.rows, function(row) {
+            return {
+              date: row.value.date,
+              temp: row.value.temp
+            };
+          }), function(row) { return row.value.temp; });
+          scope.brew.temps[0].min = minTemp;
+          scope.brew.temps[0].max = maxTemp;
+          scope.brew.temps[scope.brew.temps.length - 1].min = minTemp;
+          scope.brew.temps[scope.brew.temps.length - 1].max = maxTemp;
+          setTimeout(function() {
+            // we should be able to make a chart with this!
+            // we could probably also hook up a callback to refresh the chart every minute or so
+            scope.chart = new Morris.Line({
+              'element':element.find('.brew-chart')[0],
+              'data':temps,
+              'xkey':'date',
+              'ykeys':['temp', 'min', 'max'],
+              'hideHover':true,
+              'pointStrokeColors':'#000000',
+              labels:['Temperature']
+            });
+          }, 100);
+          scope.brew.loading = false;
         });
-      }, 100);
-      scope.brew.loading = false;
+      }
+    }).error(function(err) {
+      console.dir(err);
     });
   }
 })

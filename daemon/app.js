@@ -17,7 +17,7 @@ var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
 var collectInterval = 5000; // ms
 var ledInterval = 250; // ms
-var saveInterval = 1; // * collectInterval
+var saveInterval = 1200; // * collectInterval
 
 var wpi, spi, spiLib;
 
