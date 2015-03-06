@@ -189,8 +189,8 @@ var getActiveBrews = function() {
         if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
           samplesToTake[row.value._id] = {
             adc_channel: row.value.adc_channel,
-            maxTemp: row.value.maxTemp,
-            minTemp: row.value.minTemp
+            max_temp: row.value.max_temp,
+            min_temp: row.value.min_temp
           };
         } else {
           console.log('brew %s has invalid channel %s', row.value._id, row.value.adc_channel);
@@ -203,8 +203,8 @@ var getActiveBrews = function() {
       _.each(results, function(result) {
         if (_.isUndefined(storedTemps[result.id])) { storedTemps[result.id] = {temps:[]}; }
         storedTemps[result.id].temps.push(result.result);
-        storedTemps[result.id].minTemp = result.config.minTemp;
-        storedTemps[result.id].maxTemp = result.config.maxTemp;
+        storedTemps[result.id].min_temp = result.config.min_temp;
+        storedTemps[result.id].max_temp = result.config.max_temp;
       });
       _.each(_.keys(storedTemps), function(key) {
         if (!_.findKey(results, function(prop) { return prop.id === key; })) {
@@ -218,14 +218,16 @@ var getActiveBrews = function() {
             var saveData = {
               brew_id: key,
               date: dateString,
-              temp: averageTemp
+              temp: averageTemp,
+              min_temp: storedTemps[key].min_temp,
+              max_temp: storedTemps[key].max_temp
             };
             couch.insert(tempsDbName, saveData, function(err, data) {
               if (err) { console.log('error saving data for %s: %s',key, err); }
             });
             var event_type = 'OKAY';
-            if (!_.isUndefined(storedTemps[key].maxTemp) && saveData.temp > storedTemps[key].maxTemp) { event_type='OVER'; }
-            if (!_.isUndefined(storedTemps[key].minTemp) && saveData.temp < storedTemps[key].minTemp) { event_type='UNDER'; }
+            if (!_.isUndefined(storedTemps[key].max_temp) && saveData.temp > storedTemps[key].max_temp) { event_type='OVER'; }
+            if (!_.isUndefined(storedTemps[key].min_temp) && saveData.temp < storedTemps[key].min_temp) { event_type='UNDER'; }
             var tempEventObject = {brew_id: key, event_type: event_type, event_date: (new Date()).toString('yyyy-MM-dd HH:mm:ss')};
             couch.get(eventsDbName, '_design/events_db/_view/by_brewid', {key: key}, function(err, res) {
               if (!err) {

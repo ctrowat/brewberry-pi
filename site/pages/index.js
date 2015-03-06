@@ -2,41 +2,30 @@
 var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
-    scope.$parent.server.getDB('brewberry_index').query('index_db','all', {key:scope.brew.id}).success(function(indexData) {
-      if (data.rows.length === 1) {
-        var minTemp = data.rows[0].min_temp;
-        var maxTemp = data.rows[0].max_temp;
         scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
           scope.brew.temps = _.sortBy(_.map(data.rows, function(row) {
             return {
               date: row.value.date,
               temp: row.value.temp
             };
-          }), function(row) { return row.value.temp; });
-          scope.brew.temps[0].min = minTemp;
-          scope.brew.temps[0].max = maxTemp;
-          scope.brew.temps[scope.brew.temps.length - 1].min = minTemp;
-          scope.brew.temps[scope.brew.temps.length - 1].max = maxTemp;
+          }), function(row) { return row.date; });
           setTimeout(function() {
             // we should be able to make a chart with this!
             // we could probably also hook up a callback to refresh the chart every minute or so
-            scope.chart = new Morris.Line({
+            scope.chart = new Morris.Area({
               'element':element.find('.brew-chart')[0],
-              'data':temps,
+              'data':scope.brew.temps,
               'xkey':'date',
-              'ykeys':['temp', 'min', 'max'],
+              'ykeys':['temp', 'min_temp', 'max_temp'],
               'hideHover':true,
               'pointStrokeColors':'#000000',
-              labels:['Temperature']
+              labels:['Temperature'],
+              'behaveLikeLine':true
             });
           }, 100);
           scope.brew.loading = false;
         });
-      }
-    }).error(function(err) {
-      console.dir(err);
-    });
-  }
+      };
 })
 .controller('brewberryController', function($scope, cornercouch) {
   $scope.id = "pi";
@@ -90,7 +79,7 @@ var app = angular.module('demo', ['CornerCouch'])
     });
   };
   $scope.addNew = function() {
-    $scope.newBrews.push({channel:0, minTemp: 22, maxTemp: 24});
+    $scope.newBrews.push({channel:0, min_temp: 22, max_temp: 24});
   };
   $scope.saveNew = function(newBrew) {
     // check for an existing brew with this id before blindly saving
@@ -98,8 +87,8 @@ var app = angular.module('demo', ['CornerCouch'])
       _id: _.snakeCase(_.deburr(newBrew.name)), 
       name: newBrew.name, 
       adc_channel: newBrew.channel,
-      minTemp: parseInt(newBrew.minTemp, 10),
-      maxTemp: parseInt(newBrew.maxTemp, 10)
+      min_temp: parseInt(newBrew.min_temp, 10),
+      max_temp: parseInt(newBrew.max_temp, 10)
     });
     newDoc.save().success(function() { 
       $scope.newBrews = _.without($scope.newBrews, newBrew);
@@ -116,8 +105,8 @@ var app = angular.module('demo', ['CornerCouch'])
     if (!newBrew.name) { return false; }
     if (newBrew.channel < 0) { return false; }
     if (newBrew.channel > 7) { return false; }
-    if (!$scope.isNumber(newBrew.minTemp)) { return false; }
-    if (!$scope.isNumber(newBrew.maxTemp)) { return false; }
+    if (!$scope.isNumber(newBrew.min_temp)) { return false; }
+    if (!$scope.isNumber(newBrew.max_temp)) { return false; }
     return true;
   };
   $scope.showActions = function(brew) {
