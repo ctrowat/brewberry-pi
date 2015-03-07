@@ -3,14 +3,7 @@ var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
         scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
-          scope.brew.temps = _.sortBy(_.map(data.rows, function(row) {
-            return {
-              date: row.value.date,
-              temp: row.value.temp,
-              min_temp: row.value.min_temp,
-              max_temp: row.value.max_temp
-            };
-          }), function(row) { return row.date; });
+          scope.brew.temps = _.sortBy(_.map(data.rows, function(row) { return row.value; }), function(row) { return row.date; });
           setTimeout(function() {
             // we should be able to make a chart with this!
             // we could probably also hook up a callback to refresh the chart every minute or so
@@ -23,7 +16,7 @@ var app = angular.module('demo', ['CornerCouch'])
               'lineColors':['#4da74d','#0b62a4','#cb4b4b'],
               'pointFillColors':['#4da74d','#0b62a4','#cb4b4b'],
               'pointStrokeColors':['#4da74d','#0b62a4','#cb4b4b'],
-              labels:['Temperature', 'Min', 'Max'],
+              'labels':['Temperature', 'Min', 'Max'],
               'behaveLikeLine':true
             });
           }, 100);
@@ -52,7 +45,7 @@ var app = angular.module('demo', ['CornerCouch'])
       id: id,
       start_date: row.start_date,
       finish_date: row.finish_date,
-      comments: row.comments,
+      comment: row.comment,
       temps: [],
       loading: true
     };
@@ -61,7 +54,11 @@ var app = angular.module('demo', ['CornerCouch'])
   indexDb.query('index_db','all').success(function(data) { 
     $scope.brews = _.map(data.rows, function(row) { return transformBrew(row.value, row.id); });
     $scope.loading = false;
-  });  
+  });
+  eventsDb.query('events_db','by_brewid').success(function(data) {
+    $scope.events = _.sortBy(_.map(data.rows, function(row) { return row.value; }), function(event) { return event.event_date; }).reverse().slice(0,10);
+    
+  });
   $scope.startBrew = function(brew, index) {
     var indexDoc = indexDb.getDoc();
     indexDoc.load(brew.id).success(function(a) {
@@ -96,7 +93,6 @@ var app = angular.module('demo', ['CornerCouch'])
     });
     newDoc.save().success(function() { 
       $scope.newBrews = _.without($scope.newBrews, newBrew);
-      debugger;
       $scope.brews.push(transformBrew(newDoc, newDoc._id));
     }).error(function(err) {
       console.log('error saving document');
@@ -115,6 +111,17 @@ var app = angular.module('demo', ['CornerCouch'])
   };
   $scope.showActions = function(brew) {
     return (!(brew.finished_date) || !(brew.start_date));
+  };
+  $scope.saveComment = function(brew) {
+    var indexDoc = indexDb.getDoc();
+    indexDoc.load(brew.id).success(function(a) {
+      var loadedDoc = new indexDb.docClass(a);
+      loadedDoc.comment = brew.comment;
+      loadedDoc.save().success(function() { 
+      }).error(function(err) {
+        console.log('error saving comment for %s: %s', brew.id, err);
+      });
+    });
   };
 });
 angular.bootstrap(document, ['demo']);

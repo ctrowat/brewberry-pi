@@ -115,6 +115,12 @@
                                 This brew has not yet been started!
                               </div>
                             </div>
+                            <form>
+                              <div class="form-group">
+                                <label for="commentBox">Comments</label>
+                                <textarea id="commentBox" class="form-control" rows="2" ng-model="brew.comment" ng-blur="saveComment(brew)"></textarea>
+                              </div>
+                            </form>
                             <div class="row">
                               <div class="started_row" ng-show="brew.start_date">
                                 <div class="col-sm-2 text-right"><strong>Started:</strong></div>
@@ -165,11 +171,12 @@
                             <div ng-show="events.length === 0">
                               Nothing to see here!
                             </div>
-                            <div class="list-group" ng-show="events.length > 0">
-                              <span class="label" ng-repeat="event in events">{{event.name}} - {{event.time}}</span>
+                            <div ng-show="events.length > 0">
+                              <ul class="list-group">
+                                <li class="list-group-item" ng-class="{OVER:'list-group-item-danger', OKAY:'list-group-item-success', UNDER:'list-group-item-info'}[event.event_type]" ng-repeat="event in events">{{event.brew_id}} - {{event.event_type}}                                        <span class="pull-right text-muted small"><em>{{event.event_date}}</em></span>
+                                </li>
+                              </ul>
                             </div>
-                            <!-- /.list-group -->
-                            <a href="#" class="btn btn-default btn-block">View All Alerts</a>
                         </div>
                         <!-- /.panel-body -->
                     </div>
