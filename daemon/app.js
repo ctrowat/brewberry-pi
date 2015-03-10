@@ -214,6 +214,7 @@ var getActiveBrews = function() {
             var sampleTime = new Date();
             var dateString = sampleTime.toString('yyyy-MM-dd HH:mm:ss');
             var averageTemp = Math.round(_.reduce(storedTemps[key].temps, function(memo, num){ return memo + num; }, 0) / storedTemps[key].temps.length * 100) / 100;
+            averageTemp += 3; // for some reason they read almost exactly 3 degrees low!
             storedTemps[key].temps = [];
             var saveData = {
               brew_id: key,
