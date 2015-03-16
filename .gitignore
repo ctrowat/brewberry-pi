@@ -9,3 +9,4 @@ server/node_modules/
 daemon/node_modules
 daemon/node_modules/
 daemon/.app.js.swp
+daemon/config.json

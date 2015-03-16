@@ -15,6 +15,8 @@ var emptyBrewEntry = { adChannel: -1};
 var indexDbName = 'brewberry_index';
 var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
+var config = require('./config.json');
+var sendgrid = require('sendgrid')(config.username, config.apikey);
 var collectInterval = 5000; // ms
 var ledInterval = 250; // ms
 var saveInterval = 120; // * collectInterval
@@ -189,6 +191,7 @@ var getActiveBrews = function() {
         if (row.value.adc_channel >= 0 && row.value.adc_channel <= 7) {
           samplesToTake[row.value._id] = {
             adc_channel: row.value.adc_channel,
+            sensor_name: 'beer',
             max_temp: row.value.max_temp,
             min_temp: row.value.min_temp
           };
@@ -214,10 +217,11 @@ var getActiveBrews = function() {
             var sampleTime = new Date();
             var dateString = sampleTime.toString('yyyy-MM-dd HH:mm:ss');
             var averageTemp = Math.round(_.reduce(storedTemps[key].temps, function(memo, num){ return memo + num; }, 0) / storedTemps[key].temps.length * 100) / 100;
-            averageTemp += 3; // for some reason they read almost exactly 3 degrees low!
+            averageTemp += 4.25; // correction - I wish I didn't have to do this
             storedTemps[key].temps = [];
             var saveData = {
               brew_id: key,
+              sensor_name: storedTemps[key].sensor_name,
               date: dateString,
               temp: averageTemp,
               min_temp: storedTemps[key].min_temp,
@@ -251,7 +255,15 @@ var getActiveBrews = function() {
                   });
                 }
                 if (sendEmail) {
-                  console.log('notify user that %s is %s at %s', key, event_type, (new Date()).toString('yyyy-MM-dd HH:mm:ss'));
+                  sendgrid.send({
+                    to: config.dest_email,
+                    from: 'brew@brewberry.pi',
+                    subject: 'Temperature for ' + key + ' is ' + event_type + ' at ' + (new Date()).toSTring('yyyy-MM-dd HH:mm:ss')),
+                    text: ''
+                  }, function(err, json) {
+                    if (err) { console.log('error sending email: %s', err); }
+                  });
+                  console.log('notifying user that %s is %s at %s', key, event_type, (new Date()).toString('yyyy-MM-dd HH:mm:ss'));
                 }
               } else {
                 console.log('Error retreiving events data for %s: %s',key,err);

@@ -1,4 +1,5 @@
 {
-  username: 'zero10_send',
-  apikey: 'send_zero10'
+  username: '',
+  apikey: '',
+  dest_email: ''
 }
