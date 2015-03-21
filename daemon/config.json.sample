@@ -1,5 +1,9 @@
 {
   "username": "",
   "apikey": "",
-  "dest_email": ""
+  "dest_email": "",
+  "collectInterval": 5000,
+  "ledInterval": 250,
+  "saveInterval": 120,
+  "mock": false
 }

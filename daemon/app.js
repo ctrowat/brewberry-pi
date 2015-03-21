@@ -17,13 +17,10 @@ var tempsDbName = 'brewberry_temps';
 var eventsDbName = 'brewberry_events';
 var config = require('./config.json');
 var sendgrid = require('sendgrid')(config.username, config.apikey);
-var collectInterval = 5000; // ms
-var ledInterval = 250; // ms
-var saveInterval = 120; // * collectInterval
 
 var wpi, spi, spiLib;
 
-var mock = _.contains(argv._, 'mock');
+var mock = config.mock || _.contains(argv._, 'mock');
 if (mock) {
   wpi = require('./mock-wiring-pi.js');
   spiLib = require('./mock-spi.js');
@@ -87,7 +84,7 @@ var outputLEDState = function() {
   wpi.delay(2); // 5ms should be plenty to make sure we're over 500mS with the clock low
   wpi.digitalWrite(clockPin, 1);
   if (!stop) { 
-    setTimeout(outputLEDState, ledInterval);
+    setTimeout(outputLEDState, config.ledInterval);
   }
 };
 
@@ -213,7 +210,7 @@ var getActiveBrews = function() {
         if (!_.findKey(results, function(prop) { return prop.id === key; })) {
           delete storedTemps[key];
         } else {
-          if (storedTemps[key].temps.length >= saveInterval) {
+          if (storedTemps[key].temps.length >= config.saveInterval) {
             var sampleTime = new Date();
             var dateString = sampleTime.toString('yyyy-MM-dd HH:mm:ss');
             var averageTemp = Math.round(_.reduce(storedTemps[key].temps, function(memo, num){ return memo + num; }, 0) / storedTemps[key].temps.length * 100) / 100;
@@ -259,7 +256,7 @@ var getActiveBrews = function() {
                     to: config.dest_email,
                     from: 'brew@brewberry.pi',
                     subject: 'Temperature for ' + key + ' is ' + event_type + ' at ' + dateString,
-                    text: ''
+                    text: 'This body is just here to make sendgrid happy'
                   }, function(err, json) {
                     if (err) { console.log('error sending email: %s', err); }
                   });
@@ -273,7 +270,7 @@ var getActiveBrews = function() {
         }
       });
       if (!stop) { 
-        setTimeout(getActiveBrews, collectInterval); 
+        setTimeout(getActiveBrews, config.collectInterval); 
       }      
     });
   });
