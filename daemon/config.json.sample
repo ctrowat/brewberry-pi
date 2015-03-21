@@ -1,4 +1,5 @@
 {
-  username: '',
-  apikey: ''
+  "username": "",
+  "apikey": "",
+  "dest_email": ""
 }
