@@ -7,31 +7,33 @@ var app = angular.module('demo', ['CornerCouch'])
       series.min = {data: [], name: 'Min'};
       series.max = {data: [], name: 'Max'};
       series.temp = {data: [], name: 'Temp'};
+      var min = 20, max = 20;
       scope.brew.temps = _.sortBy(_.map(data.rows, function(row) { return row.value; }), function(row) { return row.date; });
-      _.each(scope.brew.temps, function(tempEntry) {
-        series.min.data.push([tempEntry.date, tempEntry.min_temp]);
-        series.max.data.push([tempEntry.date, tempEntry.max_temp]);
-        series.temp.data.push([tempEntry.date, tempEntry.temp]);
+      _.each(scope.brew.temps.slice(-50), function(tempEntry, index) {
+        var date = Date.parse(tempEntry.date);
+        series.min.data.push([date, tempEntry.min_temp]);
+        series.max.data.push([date, tempEntry.max_temp]);
+        series.temp.data.push([date, tempEntry.temp]);
+        min = Math.min(tempEntry.min_temp, Math.min(tempEntry.temp, min));
+        max = Math.max(tempEntry.max_temp, Math.max(tempEntry.temp, max));
       });
+      min -= 2;
+      max += 2;
       setTimeout(function() {
         element.find('.brew-chart').highcharts({
           chart: { type: 'spline' },
           title: { text: 'Temperatures' },
           xAxis: {
-              type: 'datetime',
-              dateTimeLabelFormats: { 
-                  month: '%e. %b',
-                  year: '%b'
-              },
-              title: { text: 'Date' }
+            type: 'datetime',
+            title: { text: 'Date' }
           },
           yAxis: {
-              title: { text: 'Temperature' },
-              min: 0
+            title: { text: 'Temperature' },
+            min: min,
+            max: max
           },
           tooltip: {
-              headerFormat: '<b>{series.name}</b><br>',
-              pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
+            headerFormat: '<b>{series.name}</b><br>',
           },
           plotOptions: { spline: { marker: { enabled: true } } },
           series: _.values(series)
