@@ -233,7 +233,7 @@ var getActiveBrews = function() {
             var event_type = 'OKAY';
             if (!_.isUndefined(storedTemps[key].max_temp) && saveData.temp > storedTemps[key].max_temp) { event_type='OVER'; }
             if (!_.isUndefined(storedTemps[key].min_temp) && saveData.temp < storedTemps[key].min_temp) { event_type='UNDER'; }
-            var tempEventObject = {brew_id: key, event_type: event_type, event_date: (new Date()).toString('yyyy-MM-dd HH:mm:ss')};
+            var tempEventObject = {brew_id: key, event_type: event_type, event_date: dateString};
             couch.get(eventsDbName, '_design/events_db/_view/by_brewid', {key: key}, function(err, res) {
               if (!err) {
                 var insertRecord = false;
@@ -258,12 +258,12 @@ var getActiveBrews = function() {
                   sendgrid.send({
                     to: config.dest_email,
                     from: 'brew@brewberry.pi',
-                    subject: 'Temperature for ' + key + ' is ' + event_type + ' at ' + (new Date()).toSTring('yyyy-MM-dd HH:mm:ss')),
+                    subject: 'Temperature for ' + key + ' is ' + event_type + ' at ' + dateString,
                     text: ''
                   }, function(err, json) {
                     if (err) { console.log('error sending email: %s', err); }
                   });
-                  console.log('notifying user that %s is %s at %s', key, event_type, (new Date()).toString('yyyy-MM-dd HH:mm:ss'));
+                  console.log('notifying user that %s is %s at %s', key, event_type, dateString);
                 }
               } else {
                 console.log('Error retreiving events data for %s: %s',key,err);

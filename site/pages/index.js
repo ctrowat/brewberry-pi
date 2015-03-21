@@ -2,27 +2,44 @@
 var app = angular.module('demo', ['CornerCouch'])
 .directive("brewRepeatDirective", function() {
   return function(scope, element, attrs) {
-        scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
-          scope.brew.temps = _.sortBy(_.map(data.rows, function(row) { return row.value; }), function(row) { return row.date; });
-          setTimeout(function() {
-            // we should be able to make a chart with this!
-            // we could probably also hook up a callback to refresh the chart every minute or so
-            scope.chart = new Morris.Line({
-              'element':element.find('.brew-chart')[0],
-              'data':scope.brew.temps,
-              'xkey':'date',
-              'ykeys':['temp', 'min_temp', 'max_temp'],
-              'hideHover':true,
-              'lineColors':['#4da74d','#0b62a4','#cb4b4b'],
-              'pointFillColors':['#4da74d','#0b62a4','#cb4b4b'],
-              'pointStrokeColors':['#4da74d','#0b62a4','#cb4b4b'],
-              'labels':['Temperature', 'Min', 'Max'],
-              'behaveLikeLine':true
-            });
-          }, 100);
-          scope.brew.loading = false;
+    scope.$parent.server.getDB('brewberry_temps').query('temps_db','by_brew_id', {key:scope.brew.id}).success(function(data) {
+      var series = {};
+      series.min = {data: [], name: 'Min'};
+      series.max = {data: [], name: 'Max'};
+      series.temp = {data: [], name: 'Temp'};
+      scope.brew.temps = _.sortBy(_.map(data.rows, function(row) { return row.value; }), function(row) { return row.date; });
+      _.each(scope.brew.temps, function(tempEntry) {
+        series.min.data.push([tempEntry.date, tempEntry.min_temp]);
+        series.max.data.push([tempEntry.date, tempEntry.max_temp]);
+        series.temp.data.push([tempEntry.date, tempEntry.temp]);
+      });
+      setTimeout(function() {
+        element.find('.brew-chart').highcharts({
+          chart: { type: 'spline' },
+          title: { text: 'Temperatures' },
+          xAxis: {
+              type: 'datetime',
+              dateTimeLabelFormats: { 
+                  month: '%e. %b',
+                  year: '%b'
+              },
+              title: { text: 'Date' }
+          },
+          yAxis: {
+              title: { text: 'Temperature' },
+              min: 0
+          },
+          tooltip: {
+              headerFormat: '<b>{series.name}</b><br>',
+              pointFormat: '{point.x:%e. %b}: {point.y:.2f} m'
+          },
+          plotOptions: { spline: { marker: { enabled: true } } },
+          series: _.values(series)
         });
-      };
+      }, 100);
+      scope.brew.loading = false;
+    });
+  };
 })
 .controller('brewberryController', function($scope, cornercouch) {
   $scope.id = "pi";
